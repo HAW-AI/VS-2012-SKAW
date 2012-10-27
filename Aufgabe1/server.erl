@@ -40,7 +40,6 @@ serverLog(MsgNumber, number, Pid) ->
 
 %% Processes incoming messages
 %% Returns new dictionaries
-%% TODO: Fix errors regarding Holdback
 drpMsg(Nachricht, Number, Delivery, Holdback) ->
     AktNumber = maxKey(Delivery)+1,
     if AktNumber =:= Number ->
