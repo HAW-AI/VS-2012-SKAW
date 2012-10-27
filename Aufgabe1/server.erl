@@ -86,18 +86,23 @@ minKey_(_,_) ->
 %%                        -> Delivery = [{1,msg},{2,msg},{3,msg},{4,msg}]
 %%                           Holdback = []
 %% Returns modified dictionaries
-%% TODO: Improve nonexistend errorhandling
 checkHoldback(Delivery, Holdback) ->
-    MaxDeliveryKey = maxKey(Delivery),
-    MinHoldbackKey = minKey(Holdback),
-
-    if MaxDeliveryKey+1 =:= MinHoldbackKey ->
-         NewDelivery = dict:append(MinHoldbackKey,
-                                   dict:fetch(MinHoldbackKey,Holdback),
+    checkHoldback_(Delivery, Holdback, maxKey(Delivery), minKey(Holdback)).
+%% Helper function
+%% Checks for empty dictionaries
+%% Returns modified dictionaries (if possible) 
+checkHoldback_(Delivery, Holdback, {ok,Max}, {ok,Min}) ->
+    if Max+1 =:= Min ->
+         NewDelivery = dict:append(Min,
+                                   dict:fetch(Min,Holdback),
                                    Delivery),
-         NewHoldback = dict:erase(MinHoldbackKey, Holdback),
+         NewHoldback = dict:erase(Min, Holdback),
          checkHoldback(NewDelivery, NewHoldback);
     true ->
         {Delivery, Holdback}
-    end.
+    end;
+%% Returns unmodified dictionaries due to empty input dictionaries
+checkHoldback_(Delivery, Holdback, _, _) ->
+    {Delivery, Holdback}.
+
 
