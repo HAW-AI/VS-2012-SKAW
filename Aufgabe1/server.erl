@@ -39,25 +39,25 @@ serverLog(MsgNumber, number, Pid) ->
 
 
 %% Processes incoming messages
-%% Returns new queues
+%% Returns new dictionaries
 %% TODO: Fix errors regarding Holdback
 drpMsg(Nachricht, Number, Delivery, Holdback) ->
-    AktNumber = maxKey(Delivery),
-    if AktNumber + 1 =:= Number ->
+    AktNumber = maxKey(Delivery)+1,
+    if AktNumber =:= Number ->
         {NewDelivery,NewHoldback} = checkHoldback(dict:append(Number,
                                                               Nachricht,
                                                               Delivery),
-                                                  Holdback);
+                                                  Holdback),
         {NewDelivery,NewHoldback};
-    true ->
-        NewDelivery = Delivery,
-        NewHoldback = dict:append(Number,Nachricht,Holdback),
-        {NewDelivery, NewHoldback}
-    end.
+        true ->
+            NewDelivery = Delivery,
+            NewHoldback = dict:append(Number,Nachricht,Holdback),
+            {NewDelivery, NewHoldback}
+        end.
 
 
 %% Finding maximum key of a dictonary
-%% Returns tuple of {ok,maxKey} of a dict when queue is not empty
+%% Returns tuple of {ok,maxKey} of a dict when dictionary is not empty
 %% Returns tuple of {not_ok, -2} when dict is empty
 maxKey(Delivery) ->
     maxKey_(Delivery, dict:size(Delivery)).
@@ -69,7 +69,7 @@ maxKey_(_, _) ->
 
 
 %% Finding minimum key of a dictionary
-%% Returns tuple of {ok,minKey} of a queue when dict is not empty
+%% Returns tuple of {ok,minKey} of a dictionary when dict is not empty
 %% Returns tuple of {not_ok, -2} when dict is empty
 minKey(Holdback) ->
     minKey_(Holdback, dict:size(Holdback)).
