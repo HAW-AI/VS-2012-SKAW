@@ -86,31 +86,13 @@ minKey_(_,_) ->
 %% of the Deliverqueue (bsp: Delivery = [{1,msg},{2,msg}]
 %%                           Holdback = [{3,msg},{4,msg}]
 %%                        -> Delivery = [{1,msg},{2,msg},{3,msg},{4,msg}]
-%%                           Holdback = []
+%%                        -> Holdback = []
 %% Returns modified dictionaries
 checkHoldback(Delivery, Holdback) ->
     checkHoldback_(Delivery, Holdback, maxKey(Delivery), minKey(Holdback)).
-    
-
-
-%% Checks whether Delivery is greater than MaxDelivery and removes old messages until size of Delivery is equal to
-%% MaxDelivery
-%% returns trimmed delivery
-trimDelivery(Delivery,MaxDelivery) ->
-    trimDelivery_(Delivery, dict:size(Delivery), MaxDelivery).
-
-trimDelivery_(Delivery, Size, MaxSize) when Size > MaxSize ->
-    {_,MinKey} = minKey(Delivery),
-    if MinKey > -2 ->
-        trimDelivery(dict:erase(MinKey,Delivery), MaxSize)
-    end;
-
-trimDelivery_(Delivery, _,_) ->
-    Delivery.
-
 %% Helper function
 %% Checks for empty dictionaries
-%% Returns modified dictionaries (if possible) 
+%% Returns modified dictionaries (if possible)
 checkHoldback_(Delivery, Holdback, {ok,Max}, {ok,Min}) ->
     if Max+1 =:= Min ->
          NewDelivery = dict:append(Min,
@@ -121,23 +103,56 @@ checkHoldback_(Delivery, Holdback, {ok,Max}, {ok,Min}) ->
     true ->
         {Delivery, Holdback}
     end;
-%% Returns unmodified dictionaries due to empty input dictionaries
+%% BaseCase
 checkHoldback_(Delivery, Holdback, _, _) ->
     {Delivery, Holdback}.
 
-checkHoldbackGaps(Delivery, Holdback, MaxSize) -> 
-    checkHoldbackGaps_(Delivery, Holdback, MaxSize/2, dict:size(Holdback),MaxSize).
 
-checkHoldbackGaps_(Delivery, Holdback, MaxSize, HoldbackSize, OriginalMaxSize) when HoldbackSize > MaxSize ->
+%% Checks for gaps in Holdback dictionary when Holdbacksize > MaxDeliverySize/2
+%% and fills them with "Fehlende Nachricht"
+%% (bsp: Delivery = [{1,msg},{2,msg},{3,msg},{4,msg},{5,msg}]
+%%       Holdback = [{7,msg},{8,msg},{10,msg}]
+%%    -> Delivery = [{1,msg},{2,msg},{3,msg},{4,msg},{5,msg},
+%%                   {6, "Fehlende Nachricht"},{7,msg},{8,msg}]
+%%    -> Holdback = [{10,msg}]
+%% Returns modified dictionaries
+checkHoldbackGaps(Delivery, Holdback, MaxSize) -> 
+    checkHoldbackGaps_(Delivery,
+                       Holdback,
+                       MaxSize/2,
+                       dict:size(Holdback),
+                       MaxSize).
+%% Helper function
+checkHoldbackGaps_(Delivery,
+                   Holdback,
+                   MaxSize,
+                   HoldbackSize,
+                   OriginalMaxSize) when HoldbackSize > MaxSize ->
     {_,Key} = maxKey(Delivery),
     NewDelivery = dict:append(Key+1, fehlernachricht(), Delivery),
     {NewDel, NewHB} = checkHoldback(NewDelivery, Holdback),
     checkHoldbackGaps(NewDel, NewHB, OriginalMaxSize);
-
+%% BaseCase
 checkHoldbackGaps_(Delivery, Holdback,_,_,_) ->
     {Delivery, Holdback}.
 
+
+%% Creates a filler for missing messages
+%% Returns "Fehlende Nachricht"
 fehlernachricht() ->
     "Fehlende Nachricht".
+
+
+%% Checks whether Delivery is greater than MaxDelivery and removes
+%% old messages until size of Delivery is equal to MaxDelivery
+%% Returns trimmed delivery
+trimDelivery(Delivery,MaxDelivery) ->
+    trimDelivery_(Delivery, dict:size(Delivery), MaxDelivery, minKey(Delivery)).
+%% Helper function
+trimDelivery_(Delivery, Size, MaxSize, {ok, MinKey}) when Size > MaxSize ->
+    trimDelivery(dict:erase(MinKey,Delivery), MaxSize);
+%% BaseCase
+trimDelivery_(Delivery,_,_,_) ->
+    Delivery.
 
 
