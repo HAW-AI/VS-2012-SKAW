@@ -1,16 +1,16 @@
 -module(server).
--export([start/1]).
+-export([start/2,trimDelivery/2,minKey/1,checkHoldbackGaps/3]).
 -author("Sebastian Krome, Andreas Wimmer").
 
 
 %% public start function
-start(Name) ->
-    Pid = spawn(fun() -> loop(0, dict:new(), dict:new()) end),
+start(Name,MaxDelivery) ->
+    Pid = spawn(fun() -> loop(0, dict:new(), dict:new(),MaxDelivery) end),
     register(Name, Pid).
 
 
 %% Main loop waiting for messages
-loop(MsgNumber, Delivery, Holdback) ->
+loop(MsgNumber, Delivery, Holdback,MaxDelivery) ->
     receive
         {getmsgid, Pid} ->
             werkzeug:logging(
@@ -23,10 +23,11 @@ loop(MsgNumber, Delivery, Holdback) ->
             {NewDelivery, NewHoldback} = drpMsg(Nachricht,
                                                 Number,
                                                 Delivery,
-                                                Holdback),
-            loop(MsgNumber,NewDelivery,NewHoldback)
+                                                Holdback,
+                                                MaxDelivery),
+            loop(MsgNumber,NewDelivery,NewHoldback, MaxDelivery)
     end,
-    loop(MsgNumber+1,Delivery,Holdback).
+    loop(MsgNumber+1,Delivery,Holdback, MaxDelivery).
 
 
 %% Logging function
@@ -41,18 +42,19 @@ serverLog(MsgNumber, number, Pid) ->
 
 %% Processes incoming messages
 %% Returns new dictionaries
-drpMsg(Nachricht, Number, Delivery, Holdback) ->
+drpMsg(Nachricht, Number, Delivery, Holdback, MaxDelivery) ->
     AktNumber = maxKey(Delivery)+1,
     if AktNumber =:= Number ->
         {NewDelivery,NewHoldback} = checkHoldback(dict:append(Number,
                                                               Nachricht,
                                                               Delivery),
                                                   Holdback),
-        {NewDelivery,NewHoldback};
+        Delivery2 = trimDelivery(NewDelivery, MaxDelivery),
+        {Delivery2,NewHoldback};
         true ->
             NewDelivery = Delivery,
             NewHoldback = dict:append(Number,Nachricht,Holdback),
-            {NewDelivery, NewHoldback}
+            checkHoldbackGaps(NewDelivery, NewHoldback, MaxDelivery)
         end.
 
 
@@ -88,6 +90,24 @@ minKey_(_,_) ->
 %% Returns modified dictionaries
 checkHoldback(Delivery, Holdback) ->
     checkHoldback_(Delivery, Holdback, maxKey(Delivery), minKey(Holdback)).
+    
+
+
+%% Checks whether Delivery is greater than MaxDelivery and removes old messages until size of Delivery is equal to
+%% MaxDelivery
+%% returns trimmed delivery
+trimDelivery(Delivery,MaxDelivery) ->
+    trimDelivery_(Delivery, dict:size(Delivery), MaxDelivery).
+
+trimDelivery_(Delivery, Size, MaxSize) when Size > MaxSize ->
+    {_,MinKey} = minKey(Delivery),
+    if MinKey > -2 ->
+        trimDelivery(dict:erase(MinKey,Delivery), MaxSize)
+    end;
+
+trimDelivery_(Delivery, _,_) ->
+    Delivery.
+
 %% Helper function
 %% Checks for empty dictionaries
 %% Returns modified dictionaries (if possible) 
@@ -104,5 +124,20 @@ checkHoldback_(Delivery, Holdback, {ok,Max}, {ok,Min}) ->
 %% Returns unmodified dictionaries due to empty input dictionaries
 checkHoldback_(Delivery, Holdback, _, _) ->
     {Delivery, Holdback}.
+
+checkHoldbackGaps(Delivery, Holdback, MaxSize) -> 
+    checkHoldbackGaps_(Delivery, Holdback, MaxSize/2, dict:size(Holdback),MaxSize).
+
+checkHoldbackGaps_(Delivery, Holdback, MaxSize, HoldbackSize, OriginalMaxSize) when HoldbackSize > MaxSize ->
+    {_,Key} = maxKey(Delivery),
+    NewDelivery = dict:append(Key+1, fehlernachricht(), Delivery),
+    {NewDel, NewHB} = checkHoldback(NewDelivery, Holdback),
+    checkHoldbackGaps(NewDel, NewHB, OriginalMaxSize);
+
+checkHoldbackGaps_(Delivery, Holdback,_,_,_) ->
+    {Delivery, Holdback}.
+
+fehlernachricht() ->
+    "Fehlende Nachricht".
 
 
