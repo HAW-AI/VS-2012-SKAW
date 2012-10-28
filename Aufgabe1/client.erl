@@ -1,5 +1,6 @@
 -module(client).
 -export([start/2]).
+-author("Sebastian Krome, Andreas Wimmer").
 
 
 %% public start function
