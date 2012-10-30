@@ -1,5 +1,5 @@
 -module(server).
--export([start/2,trimDelivery/2,minKey/1,checkHoldbackGaps/3]).
+-export([start/2]).
 -author("Sebastian Krome, Andreas Wimmer").
 
 
