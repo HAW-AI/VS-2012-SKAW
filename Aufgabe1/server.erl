@@ -1,16 +1,21 @@
 -module(server).
--export([start/2]).
+-export([start/3,drpMsg/5,maxKey/1]).
 -author("Sebastian Krome, Andreas Wimmer").
 
 
 %% public start function
-start(Name,MaxDelivery) ->
-    Pid = spawn(fun() -> loop(0, dict:new(), dict:new(),MaxDelivery) end),
+start(Name,MaxDelivery,Lifetime) ->
+    VPid = verwaltung:start(20000),
+    Pid = spawn(fun() -> loop(0, dict:new(), dict:new(),MaxDelivery, VPid,Lifetime) end),
     register(Name, Pid).
 
 
 %% Main loop waiting for messages
-loop(MsgNumber, Delivery, Holdback,MaxDelivery) ->
+loop(MsgNumber,Delivery,Holdback,MaxDelivery,VPid,Lifetime) ->
+    io:format("Serverstart_Delivery: ~p~n",[dict:size(Delivery)]),
+    io:format("Serverstart_Holdback: ~p~n",[dict:size(Holdback)]),
+    io:format("MsgNumber: ~p~n",[MsgNumber]),
+    {ok,TRef} = timer:send_after(Lifetime, self(), die),
     receive
         {getmsgid, Pid} ->
             werkzeug:logging(
@@ -25,9 +30,19 @@ loop(MsgNumber, Delivery, Holdback,MaxDelivery) ->
                                                 Delivery,
                                                 Holdback,
                                                 MaxDelivery),
-            loop(MsgNumber,NewDelivery,NewHoldback, MaxDelivery)
+            timer:cancel(TRef),
+            loop(MsgNumber,NewDelivery,NewHoldback,MaxDelivery, VPid,Lifetime);
+        {getmessages, CPid} ->
+            getMessages(CPid,VPid,Delivery),
+            timer:cancel(TRef),
+            loop(MsgNumber,Delivery,Holdback,MaxDelivery,VPid,Lifetime);
+        die ->
+            VPid ! kill,
+            io:format("bye~n"),
+            erlang:exit(normal)
     end,
-    loop(MsgNumber+1,Delivery,Holdback, MaxDelivery).
+    timer:cancel(TRef),
+    loop(MsgNumber+1,Delivery,Holdback,MaxDelivery,VPid,Lifetime).
 
 
 %% Logging function
@@ -43,19 +58,26 @@ serverLog(MsgNumber, number, Pid) ->
 %% Processes incoming messages
 %% Returns new dictionaries
 drpMsg(Nachricht, Number, Delivery, Holdback, MaxDelivery) ->
-    AktNumber = maxKey(Delivery)+1,
-    if AktNumber =:= Number ->
+    dropMsg_(Nachricht, Number, Delivery, Holdback, MaxDelivery, maxKey(Delivery)).
+
+dropMsg_(Nachricht,Number, Delivery, Holdback, _MaxDelivery, {not_ok,_MayKey}) ->
+    NewDelivery = dict:append(Number,Nachricht,Delivery),
+    {NewDelivery, Holdback};
+dropMsg_(Nachricht, Number, Delivery, Holdback, MaxDelivery, {ok,MaxKey}) ->
+    NewNumber = MaxKey + 1,
+    if Number =:= NewNumber ->
         {NewDelivery,NewHoldback} = checkHoldback(dict:append(Number,
                                                               Nachricht,
                                                               Delivery),
                                                   Holdback),
         Delivery2 = trimDelivery(NewDelivery, MaxDelivery),
         {Delivery2,NewHoldback};
-        true ->
+
+       Number > NewNumber ->
             NewDelivery = Delivery,
             NewHoldback = dict:append(Number,Nachricht,Holdback),
             checkHoldbackGaps(NewDelivery, NewHoldback, MaxDelivery)
-        end.
+    end.
 
 
 %% Finding maximum key of a dictonary
@@ -155,4 +177,40 @@ trimDelivery_(Delivery, Size, MaxSize, {ok, MinKey}) when Size > MaxSize ->
 trimDelivery_(Delivery,_,_,_) ->
     Delivery.
 
+
+getMessages(CPid,VPid,Delivery) ->
+    VPid ! {getNo, CPid, self()},
+    receive
+        {ClientPid, error} ->
+            io:format("client nicht gefunden~n"),
+            {_, Min} = minKey(Delivery),
+            sendMsg(ClientPid,Delivery,oldest),
+            VPid ! {storeNo, ClientPid, Min+1};
+        {ClientPid, {ok, Value}} ->
+            io:format("client gefunden, Value: ~p~n",[Value]),
+            sendMsg(ClientPid, Delivery, Value),
+            VPid ! {storeNo, ClientPid, (Value+1)}
+    end.
+
+
+sendMsg(CPid, Delivery, oldest) ->
+    {_, Min} = minKey(Delivery),
+    sendMsg_(CPid, dict:find(Min,Delivery),Delivery, Min);
+sendMsg(CPid, Delivery, Number) ->
+    sendMsg_(CPid, dict:find(Number, Delivery), Delivery, Number).
+
+sendMsg_(CPid, {ok, Msg}, Delivery, Number) ->
+    More = hasMoreMsgs(Delivery, Number),
+    if More ->
+        CPid ! {Msg, false};
+    true ->
+        CPid ! {Msg, true}
+    end;
+
+sendMsg_(CPid, error, _, _) ->
+    CPid ! {"Nachricht nichtmehr verfuegbar", false}.
+
+
+hasMoreMsgs(Delivery, Number) ->
+    not ({ok,Number} =:= maxKey(Delivery)).
 

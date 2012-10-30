@@ -1,12 +1,24 @@
 -module(client).
--export([start/2,change/1]).
+-export([start/3,start_n/1]).
+-import(tools).
 -author("Sebastian Krome, Andreas Wimmer").
 
 
+start_n(Pid)->
+    {Clients, Lifetime, Servername, Intervall} = tools:getClientConfigData(),
+    start_n_(Pid, Lifetime*1000, Servername, Intervall*1000, Clients).
+start_n_(Pid, Lifetime, Servername, Intervall, 1) ->
+    ClientPid={Servername,Pid},
+    start(ClientPid,Lifetime,Intervall);
+start_n_(Pid, Lifetime, Servername, Intervall, Clients) ->
+    ClientPid={Servername, Pid},
+    start(ClientPid,Lifetime,Intervall),
+    start_n_(Pid, Lifetime, Servername, Intervall, Clients-1).
+
 %% public start function
-start(Pid, Name) ->
-    MyPid = spawn(fun() -> editor_loop(5000, Pid, 0) end),
-    register(Name, MyPid).
+start(Pid,Lifetime,Intervall) ->
+    MyPid = spawn(fun() -> editor_loop(Intervall, Pid, 0) end),
+    timer:send_after(Lifetime, MyPid, die).
 
 
 %% Editor loop waiting for incoming messages
@@ -18,12 +30,14 @@ editor_loop(Timeout, Pid, MessageNo) ->
         {timeout,_,sendTimeout} ->
             Pid ! {getmsgid, self()},
             receive
-                Number -> Pid ! {newMsg(Number), self()},
+                Number -> Pid ! {dropmessage,{newMsg(Number), Number}},
                 log(newMsg(Number))
-            end;
-        Any -> io:format("received: " ++ Any)
-    end,
-    editor_loop(Timeout, Pid, MessageNo +1).
+            end,
+            editor_loop(Timeout, Pid, MessageNo + 1);
+        die ->
+            io:format("bye~n");
+        Any -> io:format("received: " ++ Any++"~n")
+    end.
 
 
 %% Read loop waiting for incoming messages
@@ -74,14 +88,14 @@ log(Message) ->
 %% Logs a message
 %% Changes the clients state to editor loop with new timeout time
 gotLastMessage(Message,Timeout,Pid) ->
-    log("Got last Message: "++Message),
+    log("Got last Message: "++Message++"~n"),
     editor_loop(change(Timeout), Pid, 0).
 
 
 %% Logs a message
 %% Does not change the clients state
 gotMessage(Message,Timeout, Pid) ->
-    log("Got Message: "++Message),
+    log("Got Message: "++Message++"~n"),
     read_loop(Timeout, Pid).
 
 

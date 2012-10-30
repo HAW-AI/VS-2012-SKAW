@@ -19,12 +19,10 @@ loop(ForgetAfter ,Dict, TimerDict) ->
 	end.
 
 getNo(Dict,Pid, Sender) ->
-	io:format("Gebe "++pid_to_list(Pid)++" Nummer aus\n"),
 	Value = dict:find(Pid,Dict),
 	Sender ! {Pid,Value}.
 
 storeNo(Pid, No, Dict, TimerDict, ForgetAfter) ->
-	io:format("Speichere Nummer: "++pid_to_list(Pid)++integer_to_list(No)++"\n"),
 	NewDict = dict:store(Pid,No,Dict),
 	killTimer(TimerDict,Pid),
 	{_,TimerPid} = timer:send_after(ForgetAfter, {timeout,Pid}),
@@ -35,7 +33,6 @@ killTimer(TimerDict,KeyPid) ->
 	killTimer_(dict:find(KeyPid,TimerDict)).
 
 killTimer_({ok,Value}) ->
-	io:format("KillTimer "),
 	timer:cancel(Value);
 killTimer_(_) ->
 	io:format("Konnte Timer nicht finden\n").
