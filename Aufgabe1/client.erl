@@ -31,7 +31,7 @@ editor_loop(Timeout, Pid, MessageNo) ->
             Pid ! {getmsgid, self()},
             receive
                 Number -> Pid ! {dropmessage,{newMsg(Number), Number}},
-                log(newMsg(Number))
+                    log(newMsg(Number), pid_to_list(self()))
             end,
             editor_loop(Timeout, Pid, MessageNo + 1);
         die ->
@@ -78,24 +78,30 @@ now_to_list() ->
 
 
 %% Sends a message to logging tools
-log(Message) ->
+log(Message,Endung) ->
     werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
                      "/VS-2012-SKAW/"++
                      "client_3lab22.log",
+                     Message),
+
+    werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
+                     "/VS-2012-SKAW/"++
+                     "client_3lab22"++
+                     Endung++".log",
                      Message).
 
 
 %% Logs a message
 %% Changes the clients state to editor loop with new timeout time
 gotLastMessage(Message,Timeout,Pid) ->
-    log("Got last Message: "++Message++"~n"),
+    log("Got last Message: "++Message++"\n", pid_to_list(self())),
     editor_loop(change(Timeout), Pid, 0).
 
 
 %% Logs a message
 %% Does not change the clients state
 gotMessage(Message,Timeout, Pid) ->
-    log("Got Message: "++Message++"~n"),
+    log("Got Message: "++Message++"~n", pid_to_list(self())),
     read_loop(Timeout, Pid).
 
 

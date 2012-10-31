@@ -1,11 +1,17 @@
 -module(server).
--export([start/3,drpMsg/5,maxKey/1]).
+-export([start/4, start_with_cfg/0]).
+-import(tools).
 -author("Sebastian Krome, Andreas Wimmer").
 
 
+start_with_cfg() ->
+    {Lifetime, Remembertime, Servername, DLQ_Limit, _Difftime} = tools:getServerConfigData(),
+    start(Servername, DLQ_Limit, Lifetime*1000, Remembertime*1000).
+
+
 %% public start function
-start(Name,MaxDelivery,Lifetime) ->
-    VPid = verwaltung:start(20000),
+start(Name,MaxDelivery,Lifetime, Remembertime) ->
+    VPid = verwaltung:start(Remembertime),
     Pid = spawn(fun() -> loop(0, dict:new(), dict:new(),MaxDelivery, VPid,Lifetime) end),
     register(Name, Pid).
 
@@ -18,10 +24,7 @@ loop(MsgNumber,Delivery,Holdback,MaxDelivery,VPid,Lifetime) ->
     {ok,TRef} = timer:send_after(Lifetime, self(), die),
     receive
         {getmsgid, Pid} ->
-            werkzeug:logging(
-                "/home/andy/workspace/studium/semester5/vs"++
-                "/VS-2012-SKAW/NServer_3lab22.log",
-                serverLog(MsgNumber, number, Pid)),
+            log(serverLog(MsgNumber, number, Pid)),
             Pid ! MsgNumber;
 
         {dropmessage, {Nachricht, Number}} ->
@@ -52,12 +55,28 @@ serverLog(MsgNumber, number, Pid) ->
     ++integer_to_list(MsgNumber)
     ++" an "
     ++pid_to_list(Pid)
-    ++" gesendet\n".
+    ++" gesendet --- "
+    ++now_to_list()
+    ++"\n".
 
+now_to_list() ->
+    {_,{Hour, Minutes, Seconds}} = erlang:localtime(),
+    integer_to_list(Hour)
+    ++":"
+    ++integer_to_list(Minutes)
+    ++":"
+    ++integer_to_list(Seconds).
+
+log(Message) ->
+    werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
+                     "/VS-2012-SKAW/"++
+                     "NServer.log",
+                     Message).
 
 %% Processes incoming messages
 %% Returns new dictionaries
 drpMsg(Nachricht, Number, Delivery, Holdback, MaxDelivery) ->
+    log("Dropmessage: " ++ integer_to_list(Number) ++ " --- " ++ now_to_list() ++ "\n"),
     dropMsg_(Nachricht, Number, Delivery, Holdback, MaxDelivery, maxKey(Delivery)).
 
 dropMsg_(Nachricht,Number, Delivery, Holdback, _MaxDelivery, {not_ok,_MayKey}) ->
@@ -208,7 +227,7 @@ sendMsg_(CPid, {ok, Msg}, Delivery, Number) ->
     end;
 
 sendMsg_(CPid, error, _, _) ->
-    CPid ! {"Nachricht nichtmehr verfuegbar", false}.
+    CPid ! {"Nachricht nichtmehr verfuegbar\n", false}.
 
 
 hasMoreMsgs(Delivery, Number) ->
