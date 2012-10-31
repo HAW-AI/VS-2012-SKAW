@@ -4,9 +4,11 @@
 -author("Sebastian Krome, Andreas Wimmer").
 
 
+%% Starts multiple clients as defined in the config file
 start_n(Pid)->
     {Clients, Lifetime, Servername, Intervall} = tools:getClientConfigData(),
     start_n_(Pid, Lifetime*1000, Servername, Intervall*1000, Clients).
+%% Helper function
 start_n_(Pid, Lifetime, Servername, Intervall, 1) ->
     ClientPid={Servername,Pid},
     start(ClientPid,Lifetime,Intervall);
@@ -15,7 +17,7 @@ start_n_(Pid, Lifetime, Servername, Intervall, Clients) ->
     start(ClientPid,Lifetime,Intervall),
     start_n_(Pid, Lifetime, Servername, Intervall, Clients-1).
 
-%% public start function
+%% Public start function
 start(Pid,Lifetime,Intervall) ->
     MyPid = spawn(fun() -> editor_loop(Intervall, Pid, 0) end),
     timer:send_after(Lifetime, MyPid, die).

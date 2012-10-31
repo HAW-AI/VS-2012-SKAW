@@ -4,15 +4,26 @@
 -author("Sebastian Krome, Andreas Wimmer").
 
 
+%% Starts the server with values of given config file
 start_with_cfg() ->
-    {Lifetime, Remembertime, Servername, DLQ_Limit, _Difftime} = tools:getServerConfigData(),
+    {Lifetime,
+     Remembertime,
+     Servername,
+     DLQ_Limit,
+     _Difftime} = tools:getServerConfigData(),
     start(Servername, DLQ_Limit, Lifetime*1000, Remembertime*1000).
 
 
-%% public start function
+%% Public start function
 start(Name,MaxDelivery,Lifetime, Remembertime) ->
     VPid = verwaltung:start(Remembertime),
-    Pid = spawn(fun() -> loop(0, dict:new(), dict:new(),MaxDelivery, VPid,Lifetime) end),
+    Pid = spawn(fun() -> loop(0,
+                              dict:new(),
+                              dict:new(),
+                              MaxDelivery,
+                              VPid,
+                              Lifetime)
+            end),
     register(Name, Pid).
 
 
@@ -59,6 +70,9 @@ serverLog(MsgNumber, number, Pid) ->
     ++now_to_list()
     ++"\n".
 
+
+%% Converts the current time to a list
+%% Returns current time as a list
 now_to_list() ->
     {_,{Hour, Minutes, Seconds}} = erlang:localtime(),
     integer_to_list(Hour)
@@ -67,18 +81,21 @@ now_to_list() ->
     ++":"
     ++integer_to_list(Seconds).
 
+
+%% Sends a message to logging tools
 log(Message) ->
     werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
                      "/VS-2012-SKAW/"++
                      "NServer.log",
                      Message).
 
+
 %% Processes incoming messages
 %% Returns new dictionaries
 drpMsg(Nachricht, Number, Delivery, Holdback, MaxDelivery) ->
     log("Dropmessage: " ++ integer_to_list(Number) ++ " --- " ++ now_to_list() ++ "\n"),
     dropMsg_(Nachricht, Number, Delivery, Holdback, MaxDelivery, maxKey(Delivery)).
-
+%% Helper function
 dropMsg_(Nachricht,Number, Delivery, Holdback, _MaxDelivery, {not_ok,_MayKey}) ->
     NewDelivery = dict:append(Number,Nachricht,Delivery),
     {NewDelivery, Holdback};
@@ -197,6 +214,7 @@ trimDelivery_(Delivery,_,_,_) ->
     Delivery.
 
 
+%% Checks which messages fit a client
 getMessages(CPid,VPid,Delivery) ->
     VPid ! {getNo, CPid, self()},
     receive
@@ -212,12 +230,13 @@ getMessages(CPid,VPid,Delivery) ->
     end.
 
 
+%% Sends messages to a client
 sendMsg(CPid, Delivery, oldest) ->
     {_, Min} = minKey(Delivery),
     sendMsg_(CPid, dict:find(Min,Delivery),Delivery, Min);
 sendMsg(CPid, Delivery, Number) ->
     sendMsg_(CPid, dict:find(Number, Delivery), Delivery, Number).
-
+%% Helper function
 sendMsg_(CPid, {ok, Msg}, Delivery, Number) ->
     More = hasMoreMsgs(Delivery, Number),
     if More ->
@@ -225,11 +244,11 @@ sendMsg_(CPid, {ok, Msg}, Delivery, Number) ->
     true ->
         CPid ! {Msg, true}
     end;
-
 sendMsg_(CPid, error, _, _) ->
     CPid ! {"Nachricht nichtmehr verfuegbar\n", false}.
 
 
+%% Checks for more messages fitting a client
 hasMoreMsgs(Delivery, Number) ->
     not ({ok,Number} =:= maxKey(Delivery)).
 
