@@ -81,13 +81,12 @@ now_to_list() ->
 
 %% Sends a message to logging tools
 log(Message,Endung) ->
-    werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
-                     "/VS-2012-SKAW/"++
+    {ok, Dir} = file:get_cwd(),
+    werkzeug:logging(Dir ++
                      "client_3lab22.log",
                      Message),
 
-    werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
-                     "/VS-2012-SKAW/"++
+    werkzeug:logging(Dir ++
                      "client_3lab22"++
                      Endung++".log",
                      Message).

@@ -84,8 +84,8 @@ now_to_list() ->
 
 %% Sends a message to logging tools
 log(Message) ->
-    werkzeug:logging("/home/andy/workspace/studium/semester5/vs"++
-                     "/VS-2012-SKAW/"++
+    {ok, Dir} = file:get_cwd(),
+    werkzeug:logging(Dir++
                      "NServer.log",
                      Message).
 
