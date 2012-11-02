@@ -39,7 +39,8 @@ logloop(Y) -> 	receive
 					{Datei,Inhalt} -> io:format(Inhalt),
 									  file:write_file(Datei,Inhalt,[append]),
 									  logloop(Y+1);
-					kill -> true
+					kill -> true,
+                            io:format("werkzeug bye\n")
 				end.
 
 %% Löscht das letzte Element einer Liste

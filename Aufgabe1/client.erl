@@ -20,7 +20,8 @@ start_n_(Pid, Lifetime, Servername, Intervall, Clients) ->
 %% Public start function
 start(Pid,Lifetime,Intervall) ->
     MyPid = spawn(fun() -> editor_loop(Intervall, Pid, 0) end),
-    timer:send_after(Lifetime, MyPid, die).
+    timer:send_after(Lifetime, MyPid, die),
+    timer:send_after(Lifetime+5000, logklc, kill).
 
 
 %% Editor loop waiting for incoming messages

@@ -52,6 +52,7 @@ loop(MsgNumber,Delivery,Holdback,MaxDelivery,VPid,Lifetime) ->
             loop(MsgNumber,Delivery,Holdback,MaxDelivery,VPid,Lifetime);
         die ->
             VPid ! kill,
+            logklc ! kill,
             io:format("bye~n"),
             erlang:exit(normal)
     end,
