@@ -1,5 +1,5 @@
 -module(client).
--export([start/3,start_n/1]).
+-export([start/3,start_n/1,removePidSonderzeichen/2]).
 -import(tools).
 -author("Sebastian Krome, Andreas Wimmer").
 
@@ -33,8 +33,15 @@ editor_loop(Timeout, Pid, MessageNo) ->
         {timeout,_,sendTimeout} ->
             Pid ! {getmsgid, self()},
             receive
-                Number -> Pid ! {dropmessage,{newMsg(Number), Number}},
-                    log(newMsg(Number), pid_to_list(self()))
+                Number ->
+                    random:seed(),
+                    random:seed(now()),
+                    dropMsgByChance(Number, Pid, random:uniform(2))
+                    %% Prozentsatz der vergessenen Nachrichten wird durch den Paramter in random:uniform() bestimmt
+                    %% random:uniform(x) --> P(Vergessen) = 1/x
+                    %%
+                    %%Pid ! {dropmessage,{newMsg(Number), Number}},
+                    %%log(newMsg(Number), pid_to_list(self()))
             end,
             editor_loop(Timeout, Pid, MessageNo + 1);
         die ->
@@ -83,6 +90,7 @@ now_to_list() ->
 
 %% Sends a message to logging tools
 log(Message,Endung) ->
+    SonderzeichenloseEndung = removePidSonderzeichen(Endung, []),
     {ok, Dir} = file:get_cwd(),
     werkzeug:logging(Dir ++
                     "client_3lab22.log",
@@ -90,10 +98,16 @@ log(Message,Endung) ->
 
     werkzeug:logging(Dir ++
                      "client_3lab22"++
-                     Endung++".log",
+                     SonderzeichenloseEndung++".log",
                      Message).
 
 
+removePidSonderzeichen([H|T], Result) when [H] =:= "<" ; [H] =:= ">" ->
+    removePidSonderzeichen(T, Result);
+removePidSonderzeichen([H|T], Result) ->
+    removePidSonderzeichen(T, Result++[H]);
+removePidSonderzeichen([], Result) ->
+    Result.
 %% Logs a message
 %% Changes the clients state to editor loop with new timeout time
 gotLastMessage(Message,Timeout,Pid) ->
@@ -123,4 +137,8 @@ change(Time) ->
     end.
 
 
-
+dropMsgByChance(Number, Pid,  Chance) when Chance =:= 1 ->
+    Pid ! {dropmessage,{newMsg(Number), Number}},
+    log(newMsg(Number), pid_to_list(self()));
+dropMsgByChance(_,_,_) ->
+    log("vergesse nachricht\n", pid_to_list(self())).
