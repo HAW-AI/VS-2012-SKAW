@@ -54,8 +54,9 @@ read_loop(Timeout, Pid) ->
                                                     %% keine weiteren Nachrichten
         {Nachrichteninhalt, false} -> gotMessage(Nachrichteninhalt,
                                                  Timeout,
-                                                 Pid)
+                                                 Pid);
                                                  %% weitere Nachrichten
+        Any -> io:format("received: " ++ Any ++ "~n")
     end.
 
 

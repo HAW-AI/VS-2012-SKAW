@@ -54,7 +54,9 @@ loop(MsgNumber,Delivery,Holdback,MaxDelivery,VPid,Lifetime) ->
             VPid ! kill,
             logklc ! kill,
             io:format("bye~n"),
-            erlang:exit(normal)
+            erlang:exit(normal);
+        Any ->
+            io:format("received: " ++ Any ++ "~n")
     end,
     timer:cancel(TRef),
     loop(MsgNumber+1,Delivery,Holdback,MaxDelivery,VPid,Lifetime).
