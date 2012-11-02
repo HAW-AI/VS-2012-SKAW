@@ -33,6 +33,7 @@ editor_loop(Timeout, Pid, MessageNo) ->
         {timeout,_,sendTimeout} ->
             Pid ! {getmsgid, self()},
             receive
+                 die -> io:format("bye\n");
                 Number ->
                     random:seed(),
                     random:seed(now()),
@@ -42,6 +43,8 @@ editor_loop(Timeout, Pid, MessageNo) ->
                     %%
                     %%Pid ! {dropmessage,{newMsg(Number), Number}},
                     %%log(newMsg(Number), pid_to_list(self()))
+
+
             end,
             editor_loop(Timeout, Pid, MessageNo + 1);
         die ->
