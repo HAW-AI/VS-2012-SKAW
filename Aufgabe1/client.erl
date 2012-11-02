@@ -21,7 +21,7 @@ start_n_(Pid, Lifetime, Servername, Intervall, Clients) ->
 start(Pid,Lifetime,Intervall) ->
     MyPid = spawn(fun() -> editor_loop(Intervall, Pid, 0) end),
     timer:send_after(Lifetime, MyPid, die),
-    timer:send_after(Lifetime+5000, logklc, kill).
+    timer:send_after(Lifetime+100, logklc, kill).
 
 
 %% Editor loop waiting for incoming messages
@@ -85,7 +85,7 @@ now_to_list() ->
 log(Message,Endung) ->
     {ok, Dir} = file:get_cwd(),
     werkzeug:logging(Dir ++
-                     "client_3lab22.log",
+                    "client_3lab22.log",
                      Message),
 
     werkzeug:logging(Dir ++

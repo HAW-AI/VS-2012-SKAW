@@ -1,5 +1,5 @@
 -module(server).
--export([start/4, start_with_cfg/0]).
+-export([start/4, start_with_cfg/0,drpMsg/5, getNextValue/2]).
 -import(tools).
 -author("Sebastian Krome, Andreas Wimmer").
 
@@ -115,7 +115,9 @@ dropMsg_(Nachricht, Number, Delivery, Holdback, MaxDelivery, {ok,MaxKey}) ->
        Number > NewNumber ->
             NewDelivery = Delivery,
             NewHoldback = dict:append(Number,Nachricht,Holdback),
-            checkHoldbackGaps(NewDelivery, NewHoldback, MaxDelivery)
+            checkHoldbackGaps(NewDelivery, NewHoldback, MaxDelivery);
+        true -> {Delivery,Holdback}
+
     end.
 
 
@@ -188,20 +190,23 @@ checkHoldbackGaps_(Delivery,
                    Holdback,
                    MaxSize,
                    HoldbackSize,
-                   OriginalMaxSize) when HoldbackSize > MaxSize ->
-    {_,Key} = maxKey(Delivery),
-    NewDelivery = dict:append(Key+1, fehlernachricht(), Delivery),
-    {NewDel, NewHB} = checkHoldback(NewDelivery, Holdback),
-    checkHoldbackGaps(NewDel, NewHB, OriginalMaxSize);
-%% BaseCase
+                   _OriginalMaxSize) when HoldbackSize > MaxSize ->
+    {_,Min} = maxKey(Delivery),
+    {_,Max} = minKey(Holdback),
+    NewDelivery = dict:append(Min+1, fehlernachricht(Min+1,Max-1), Delivery),
+    NewDelivery2 = dict:append(Max, dict:fetch(Max,Holdback),NewDelivery),
+    NewHoldback = dict:erase(Max,Holdback),
+    {NewDel, NewHB} = checkHoldback(NewDelivery2, NewHoldback),
+    {NewDel, NewHB};
+
 checkHoldbackGaps_(Delivery, Holdback,_,_,_) ->
     {Delivery, Holdback}.
 
 
 %% Creates a filler for missing messages
 %% Returns "Fehlende Nachricht"
-fehlernachricht() ->
-    "Fehlende Nachricht".
+fehlernachricht(Min,Max) ->
+    "Fehlende Nachricht von: ["++integer_to_list(Min)++":"++integer_to_list(Max)++"]\n".
 
 
 %% Checks whether Delivery is greater than MaxDelivery and removes
@@ -229,7 +234,7 @@ getMessages(CPid,VPid,Delivery) ->
         {ClientPid, {ok, Value}} ->
             io:format("client gefunden, Value: ~p~n",[Value]),
             sendMsg(ClientPid, Delivery, Value),
-            VPid ! {storeNo, ClientPid, (Value+1)}
+            VPid ! {storeNo, ClientPid, (getNextValue(Value,Delivery))}
     end.
 
 
@@ -254,4 +259,29 @@ sendMsg_(CPid, error, _, _) ->
 %% Checks for more messages fitting a client
 hasMoreMsgs(Delivery, Number) ->
     not ({ok,Number} =:= maxKey(Delivery)).
+
+getNextValue(Number, Delivery) ->
+  getNextValue_(Number,Delivery,maxKey(Delivery),minKey(Delivery)).
+
+getNextValue_(Number,_Delivery,{_,_MaxKey},{_,MinKey}) when Number < MinKey ->
+  MinKey;
+
+getNextValue_(Number,_Delivery,{_,MaxKey},{_,_MinKey}) when Number >= MaxKey ->
+  MaxKey;
+
+getNextValue_(Number,Delivery,{_,MaxKey},{_,_MinKey}) ->
+  checkForKey(Number,dict:fetch_keys(Delivery), MaxKey).
+
+checkForKey(_Number,[],Result) -> Result;
+
+checkForKey(Number, [H|T], Result) when H > Number, H < Result ->
+  checkForKey(Number,T, H);
+
+checkForKey(Number,[_H|T], Result) ->
+  checkForKey(Number,T,Result).
+
+
+
+
+
 
