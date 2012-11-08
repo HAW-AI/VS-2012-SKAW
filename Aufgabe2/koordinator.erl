@@ -1,6 +1,6 @@
 -module(koordinator).
--export([]).
--authors(sebastian krome, andreas wimmer),
+-export([start/0]).
+-authors("sebastian krome, andreas wimmer").
 -record(steeringVals, {arbeitszeit, 
 						termzeit,
 						ggtProzessnummer,
@@ -15,15 +15,17 @@ start() ->
 								nameservicenode = Nameservicenode,
 								koordinatorname = Koordinatorname},
 	net_adm:ping(Nameservicenode),
+	global:sync(),
 	Nameservice = global:whereis_name(nameservice),
-	register(self(),Koordinatorname),
+	register(Koordinatorname,self()),
 	Nameservice ! {self(), {rebind, Koordinatorname, node()}},
-	loop(init).
+	loop(init, SteeringVals).
 
-loop(init) ->
+loop(init, SteeringVals) ->
 	receive 
-		{getsteeringval, Pid} -> sendSteeringVal(Pid)
-	end
-
-sendSteeringVal() ->
+		{getsteeringval, Pid} -> Pid ! {steeringval,
+										SteeringVals#steeringVals.arbeitszeit,
+										SteeringVals#steeringVals.termzeit,
+										SteeringVals#steeringVals.ggtProzessnummer}
+	end.
 

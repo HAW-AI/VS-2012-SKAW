@@ -1,5 +1,5 @@
 -module(tools).
--export([getClientConfigData/0,getServerConfigData/0]).
+-export([getGgtConfigData/0,getKoordinatorConfigData/0, log/2]).
 
 getGgtConfigData() ->
  	{ok, Configurations} = file:consult("ggt.cfg"),
@@ -18,5 +18,25 @@ getKoordinatorConfigData() ->
 	Nameservicenode = proplists:get_value(nameservicenode, Configurations),
 	Koordinatorname = proplists:get_value(koordinatorname, Configurations),
 	{Arbeitszeit, Termzeit, Ggtprozessnummer, Nameservicenode, Koordinatorname}.
+
+
+log(Message,Endung) ->
+    SonderzeichenloseEndung = removePidSonderzeichen(Endung, []),
+    {ok, Dir} = file:get_cwd(),
+    werkzeug:logging(Dir ++
+                    "client_3lab22.log",
+                     Message),
+
+    werkzeug:logging(Dir ++
+                     "client_3lab22"++
+                     SonderzeichenloseEndung++".log",
+                     Message).
+
+removePidSonderzeichen([H|T], Result) when [H] =:= "<" ; [H] =:= ">" ->
+    removePidSonderzeichen(T, Result);
+removePidSonderzeichen([H|T], Result) ->
+    removePidSonderzeichen(T, Result++[H]);
+removePidSonderzeichen([], Result) ->
+    Result.
 
 
