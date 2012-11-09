@@ -24,11 +24,7 @@ log(Message,Endung) ->
     SonderzeichenloseEndung = removePidSonderzeichen(Endung, []),
     {ok, Dir} = file:get_cwd(),
     werkzeug:logging(Dir ++
-                    "client_3lab22.log",
-                     Message),
-
-    werkzeug:logging(Dir ++
-                     "client_3lab22"++
+                     "Logging"++
                      SonderzeichenloseEndung++".log",
                      Message).
 
