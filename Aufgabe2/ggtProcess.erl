@@ -22,7 +22,7 @@ start_({_ArbeitsZeit, _TermZeit, GGTProzessNummer}, ConfigRecord) ->
                                                  node()}},
 
     receive
-        ok -> log(ProcessName ++ ": bound")
+        ok -> log(ProcessName ++ ": bound\n")
     end,
 
     ConfigRecord#configVals.koordinatoradress ! {hello,
@@ -31,8 +31,8 @@ start_({_ArbeitsZeit, _TermZeit, GGTProzessNummer}, ConfigRecord) ->
 
 loop(ProcessName) ->
     receive
-        kill -> log(ProcessName ++ ": byebye");
-        _ -> log("received nothing useful"),
+        kill -> log(ProcessName ++ ": byebye"),
+        %_ -> log("received nothing useful"),
              loop(ProcessName)
     end.
 
@@ -46,7 +46,7 @@ createProcessName(ProcessNo, ConfigRecord) ->
     {processName, ProcessName}.
 
 log(Message) ->
-	Endung = "GGTProcess: "++pid_to_list(self()),
+	Endung = "GGTProcess_"++pid_to_list(self()),
 	tools:log(Message,Endung).
 
 

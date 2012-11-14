@@ -77,7 +77,6 @@ computeMi(GGT)->
     Prims = [3,5,11,13,23,37],
     F = fun(Prim,Acc) -> miSingleStep(Prim,Acc)end,
     GGT*lists:foldl(F,1,Prims).
-    
 
 miSingleStep(Prim,Acc)->
     case random:uniform(3) of
@@ -95,7 +94,7 @@ distributeMis([GGTProcess|Tail],[Mi|MiTail],Nameservice)->
                 ++ " not found while distributing Mis\n");
         {Name, Node} ->
             log(atom_to_list(Name)
-                ++ " setze Mi"
+                ++ " setze Mi: "
                 ++ integer_to_list(Mi)
                 ++ "\n"),
             {Name, Node} ! {setpm, Mi}
@@ -148,7 +147,6 @@ listSize([_|T], Acc) ->
     listSize(T, Acc+1).
 
 log(Message) ->
-    io:format(Message),
 	Endung = "Koordinator",
 	tools:log(Message,Endung).
 
