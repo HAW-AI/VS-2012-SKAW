@@ -31,10 +31,28 @@ start_({_ArbeitsZeit, _TermZeit, GGTProzessNummer}, ConfigRecord) ->
 
 loop(ProcessName) ->
     receive
-        kill -> log(ProcessName ++ ": byebye"),
-        %_ -> log("received nothing useful"),
+        kill -> log(ProcessName ++ ": byebye");
+        {setneighbors, N1, N2} -> 
+              if is_atom(N1),is_atom(N2) -> log("got Neighbors: "++atom_to_list(N1)
+                                                  ++" "++atom_to_list(N2)++"\n");
+                 true -> log("got not atom Neighbors\n")
+              end,
+              loop(ProcessName, N1, N2);
+        _ -> log("received nothing useful\n"),
              loop(ProcessName)
     end.
+
+loop(ProcessName, N1,N2) -> 
+  receive
+    {setpm,MiNeu} -> 
+        log("Got new pm: "++integer_to_list(MiNeu)++"\n"),
+        loop(ProcessName, N1,N2,MiNeu);
+    kill -> log(ProcessName ++ ": byebye\n")
+  end.
+
+loop(ProcessName, N1, N2, Mi) ->
+  1.
+
 
 
 
@@ -46,7 +64,7 @@ createProcessName(ProcessNo, ConfigRecord) ->
     {processName, ProcessName}.
 
 log(Message) ->
-	Endung = "GGTProcess_"++pid_to_list(self()),
+	Endung = "GGTProcess: "++pid_to_list(self()),
 	tools:log(Message,Endung).
 
 
