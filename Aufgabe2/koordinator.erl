@@ -1,5 +1,5 @@
 -module(koordinator).
--export([start/0, neighbours/3]).
+-export([start/0, neighbours/3,computeMis/3,miSingleStep/2]).
 -authors("sebastian krome, andreas wimmer").
 -record(steeringVals, {arbeitszeit, 
 						termzeit,
@@ -59,8 +59,50 @@ loop(init, Nameservice, SteeringVals, ProcessList) ->
 
 	end;
 
-loop(bereit, _Nameservice, _SteeringVals, _ProcessList) ->
-    1.
+loop(bereit, Nameservice, _SteeringVals, ProcessList) ->
+    receive
+        {setMi, GGT} -> Mis = computeMis(ProcessList,GGT,[]),
+                        distributeMis(ProcessList,Mis,Nameservice)
+    end.
+
+computeMis([],_GGT,AccList) ->
+    AccList;
+computeMis([_H|T],GGT,AccList)->
+    random:seed(),
+    random:seed(now()),
+    Mi = computeMi(GGT),
+    computeMis(T,GGT,AccList++[Mi]).
+
+computeMi(GGT)->
+    Prims = [3,5,11,13,23,37],
+    F = fun(Prim,Acc) -> miSingleStep(Prim,Acc)end,
+    GGT*lists:foldl(F,1,Prims).
+    
+
+miSingleStep(Prim,Acc)->
+    case random:uniform(3) of
+        1 -> Acc;
+        2 -> Acc*Prim;
+        3 -> trunc(Acc*math:pow(Prim,2))
+    end.
+
+distributeMis([],_,_) -> 1;
+distributeMis([GGTProcess|Tail],[Mi|MiTail],Nameservice)->
+    Nameservice ! {self(), {lookup, GGTProcess}},
+    receive
+        not_found ->
+            log(atom_to_list(GGTProcess)
+                ++ " not found while distributing Mis\n");
+        {Name, Node} ->
+            log(atom_to_list(Name)
+                ++ " setze Mi"
+                ++ integer_to_list(Mi)
+                ++ "\n"),
+            {Name, Node} ! {setpm, Mi}
+    end,
+    distributeMis(Tail,MiTail,Nameservice).
+
+
 
 buildProcessRing([],_) ->
     [];
