@@ -32,9 +32,27 @@ start_({_ArbeitsZeit, _TermZeit, GGTProzessNummer}, ConfigRecord) ->
 loop(ProcessName) ->
     receive
         kill -> log(ProcessName ++ ": byebye");
+        {setneighbors, N1, N2} -> 
+              if is_atom(N1),is_atom(N2) -> log("got Neighbors: "++atom_to_list(N1)
+                                                  ++" "++atom_to_list(N2)++"\n");
+                 true -> log("got not atom Neighbors")
+              end,
+              loop(ProcessName, N1, N2);
         _ -> log("received nothing useful"),
              loop(ProcessName)
     end.
+
+loop(ProcessName, N1,N2) -> 
+  receive
+    {setpm,MiNeu} -> 
+        log("Got new pm: "++integer_to_list(MiNeu)),
+        loop(ProcessName, N1,N2,Mi);
+    kill -> log(ProcessName ++ ": byebye")
+  end.
+
+loop(ProcessName, N1, N2, Mi) ->
+  1.
+
 
 
 
