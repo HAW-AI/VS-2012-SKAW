@@ -39,7 +39,7 @@ loop(init, Nameservice, SteeringVals, ProcessList) ->
 				   SteeringVals#steeringVals.ggtProzessnummer},
             loop(init, Nameservice, SteeringVals, ProcessList);
 
-        {hello, ProcessName} ->
+        {hello, ProcessN(ame} ->
             if is_atom(ProcessName) ->
                 log("Client: "
                      ++ atom_to_list(ProcessName)
@@ -59,11 +59,36 @@ loop(init, Nameservice, SteeringVals, ProcessList) ->
 
 	end;
 
-loop(bereit, Nameservice, _SteeringVals, ProcessList) ->
+loop(bereit, Nameservice, SteeringVals, ProcessList) ->
     receive
-        {setMi, GGT} -> Mis = computeMis(ProcessList,GGT,[]),
-                        distributeMis(ProcessList,Mis,Nameservice)
+        {setMi, GGT} -> 
+            log("received setMi: "++integer_to_list(GGT)),
+            Mis = computeMis(ProcessList,GGT,[]),
+            distributeMis(ProcessList,Mis,Nameservice);
+        reset -> 
+            log("killing all GGT Processes"),
+            killGGT(ProcessList),
+            loop(init,Nameservice,SteeringVals,ProcessList);
+        kill ->
+            killGGT(ProcessList),
+            log("Bye Bye")
     end.
+
+killGGT([]) ->
+    1;
+killGGT([H|T]) ->
+    Nameservice ! {self(), {lookup, H}},
+    receive
+        not_found ->
+            log(atom_to_list(H)
+                ++ " not found while building ring\n");
+        {Name, Node} ->
+            log(atom_to_list(Name)
+                ++ "kill gesendet\n",
+            {Name, Node} ! kill
+    end,
+    killGGT(T).
+
 
 computeMis([],_GGT,AccList) ->
     AccList;
