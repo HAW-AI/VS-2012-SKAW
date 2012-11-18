@@ -39,7 +39,7 @@ loop(init, Nameservice, SteeringVals, ProcessList) ->
 				   SteeringVals#steeringVals.ggtProzessnummer},
             loop(init, Nameservice, SteeringVals, ProcessList);
 
-        {hello, ProcessN(ame} ->
+        {hello, ProcessName} ->
             if is_atom(ProcessName) ->
                 log("Client: "
                      ++ atom_to_list(ProcessName)
@@ -64,19 +64,22 @@ loop(bereit, Nameservice, SteeringVals, ProcessList) ->
         {setMi, GGT} -> 
             log("received setMi: "++integer_to_list(GGT)),
             Mis = computeMis(ProcessList,GGT,[]),
-            distributeMis(ProcessList,Mis,Nameservice);
-        reset -> 
+            distributeMis(ProcessList,Mis,Nameservice),
+            FifteenPList = getFifteenPercent(ProcessList),
+            distributedStart(FifteenPList, Nameservice, computeMi(GGT)),
+            loop(bereit, Nameservice, SteeringVals, ProcessList);
+        reset ->
             log("killing all GGT Processes"),
-            killGGT(ProcessList),
+            killGGT(ProcessList, Nameservice),
             loop(init,Nameservice,SteeringVals,ProcessList);
         kill ->
-            killGGT(ProcessList),
+            killGGT(ProcessList, Nameservice),
             log("Bye Bye")
     end.
 
-killGGT([]) ->
+killGGT([], _) ->
     1;
-killGGT([H|T]) ->
+killGGT([H|T], Nameservice) ->
     Nameservice ! {self(), {lookup, H}},
     receive
         not_found ->
@@ -84,10 +87,10 @@ killGGT([H|T]) ->
                 ++ " not found while building ring\n");
         {Name, Node} ->
             log(atom_to_list(Name)
-                ++ "kill gesendet\n",
+                ++ "kill gesendet\n"),
             {Name, Node} ! kill
     end,
-    killGGT(T).
+    killGGT(T, Nameservice).
 
 
 computeMis([],_GGT,AccList) ->
@@ -132,7 +135,7 @@ buildProcessRing([],_) ->
     [];
 buildProcessRing(ProcessList, Nameservice) ->
     NewProcessList = werkzeug:shuffle(ProcessList),
-    buildProcessRing_(1, listSize(NewProcessList, 0), NewProcessList, Nameservice).
+    buildProcessRing_(1, listSize(NewProcessList), NewProcessList, Nameservice).
 
 
 buildProcessRing_(Count, Length, _, _) when Length < Count ->
@@ -165,17 +168,41 @@ neighbours(Length, Length, L) ->
 neighbours(X, _Length, L) ->
     {lists:nth(X-1, L),lists:nth(X+1, L)}.
 
-
-listSize([], Acc) ->
+listSize(List) ->
+    listSize_(List, 0).
+listSize_([], Acc) ->
     Acc;
-listSize([_|T], Acc) ->
-    listSize(T, Acc+1).
+listSize_([_|T], Acc) ->
+    listSize_(T, Acc+1).
 
 log(Message) ->
 	Endung = "Koordinator",
 	tools:log(Message,Endung).
 
 
+getFifteenPercent(List) ->
+    FifteenPercent = trunc(listSize(List) * 0.15)+1,
+    werkzeug:shuffle(List),
+    lists:sublist(List, FifteenPercent).
+
+distributedStart([], _, _) ->
+    1;
+distributedStart([H|T], Nameservice, Number) ->
+    Nameservice ! {self(), {lookup, H}},
+    receive
+        not_found ->
+            log(atom_to_list(H)
+                ++ " not found while starting calculation\n");
+        {briefmi, {_,_,_}} ->
+            1;
+        {Name, Node} ->
+            log(atom_to_list(Name)
+                ++ " start calculation "
+                ++ "\n"),
+            {Name, Node} ! {sendy, Number}
+    end,
+
+    distributedStart(T, Nameservice, Number).
 
 
 

@@ -27,7 +27,7 @@ start_({_ArbeitsZeit, _TermZeit, GGTProzessNummer}, ConfigRecord) ->
 
     ConfigRecord#configVals.koordinatoradress ! {hello,
                                                  list_to_atom(ProcessName)},
-    loop(ProcessName).
+    loop(ProcessName, ConfigRecord).
 
 %% waiting for neighbors - loop
 loop(ProcessName, ConfigRecord) ->
@@ -40,21 +40,21 @@ loop(ProcessName, ConfigRecord) ->
               end,
               loop(ProcessName, N1, N2, ConfigRecord);
         {tellmi,From} ->
-            From ! -1
+            From ! -1;
         _ -> log("received nothing useful\n"),
              loop(ProcessName, ConfigRecord)
     end.
 
 %% waiting for mi loop
-loop(ProcessName, N1,N2,ConfigRecord) -> 
+loop(ProcessName, N1,N2,ConfigRecord) ->
   receive
     {setpm,MiNeu} -> 
         log("Got new pm: "++integer_to_list(MiNeu)++"\n"),
         loop(ProcessName, N1,N2,MiNeu,ConfigRecord);
     {setneighbors, New1,New2} ->
-        loop(Processanme,New1,New2,ConfigRecord);
+        loop(ProcessName,New1,New2,ConfigRecord);
     {tellmi,From} ->
-            From ! -1
+            From ! -1;
     kill -> log(ProcessName ++ ": byebye\n")
   end.
 
@@ -66,20 +66,20 @@ loop(ProcessName, N1, N2, Mi,ConfigRecord) ->
         log("Received "++integer_to_list(Y)++"; neues Mi: "++integer_to_list(NewMi)++"\n"),
         N1 ! {sendy,NewMi},
         N2 ! {sendy,NewMi},
-        ConfigRecord#configVals.koordinatoradress ! {briefmi, {Processname,NewMi,erlang:time()}}
-        loop(Processname,N1,N2,NewMi,ConfigRecord);
+        ConfigRecord#configVals.koordinatoradress ! {briefmi, {ProcessName,NewMi,erlang:time()}},
+        loop(ProcessName,N1,N2,NewMi,ConfigRecord);
     {sendy, Y} -> 
         log("Received "++integer_to_list(Y)++"behalte Mi: "++integer_to_list(Mi)++"\n"),
-        loop(Processname,N1,N2,Mi,ConfigRecord);
+        loop(ProcessName,N1,N2,Mi,ConfigRecord);
     {setneighbors, New1,New2} ->
-        loop(Processanme,New1,New2,ConfigRecord);
+        loop(ProcessName,New1,New2,ConfigRecord);
     {setpm,MiNeu} -> 
         log("Got new pm: "++integer_to_list(MiNeu)++"\n"),
         loop(ProcessName, N1,N2,MiNeu,ConfigRecord);
     {tellmi,From} ->
             From ! Mi;
     kill -> log(ProcessName ++ ": byebye\n")
-  end
+  end.
 
 
 
