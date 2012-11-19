@@ -56,7 +56,6 @@ loop(init, Nameservice, SteeringVals, ProcessList) ->
             buildProcessRing(ProcessList, Nameservice),
             loop(bereit, Nameservice, SteeringVals, ProcessList)
 
-
 	end;
 
 loop(bereit, Nameservice, SteeringVals, ProcessList) ->
@@ -66,12 +65,24 @@ loop(bereit, Nameservice, SteeringVals, ProcessList) ->
             Mis = computeMis(ProcessList,GGT,[]),
             distributeMis(ProcessList,Mis,Nameservice),
             FifteenPList = getFifteenPercent(ProcessList),
+            %distributedStart(FifteenPList, Nameservice, GGT),
             distributedStart(FifteenPList, Nameservice, computeMi(GGT)),
             loop(bereit, Nameservice, SteeringVals, ProcessList);
         reset ->
             log("killing all GGT Processes"),
             killGGT(ProcessList, Nameservice),
             loop(init,Nameservice,SteeringVals,ProcessList);
+        {briefmi, {Clientname, CMi, _CZeit}} ->
+            log("received: briefmi from "
+                ++atom_to_list(Clientname)
+                ++" with Mi: "
+                ++integer_to_list(CMi)
+                ++"\n");
+        {briefterm, {_Clientname, CMi, _CZeit}} ->
+            log("Calculation exited: "
+                ++ " RESULT: "
+                ++integer_to_list(CMi)
+                ++"\n");
         kill ->
             killGGT(ProcessList, Nameservice),
             log("Bye Bye")
@@ -193,8 +204,11 @@ distributedStart([H|T], Nameservice, Number) ->
         not_found ->
             log(atom_to_list(H)
                 ++ " not found while starting calculation\n");
-        {briefmi, {_,_,_}} ->
-            1;
+        {briefmi, {Clientname, CMi, _CZeit}} ->
+            log(atom_to_list(Clientname)
+                ++ " got new mi "
+                ++ integer_to_list(CMi)
+                ++ "\n");
         {Name, Node} ->
             log(atom_to_list(Name)
                 ++ " start calculation "
