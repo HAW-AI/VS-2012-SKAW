@@ -69,23 +69,26 @@ loop(bereit, Nameservice, SteeringVals, ProcessList) ->
             distributedStart(FifteenPList, Nameservice, computeMi(GGT)),
             loop(bereit, Nameservice, SteeringVals, ProcessList);
         reset ->
-            log("killing all GGT Processes"),
+            log("killing all GGT Processes\n"),
             killGGT(ProcessList, Nameservice),
-            loop(init,Nameservice,SteeringVals,ProcessList);
+            loop(init,Nameservice,SteeringVals,[]);
         {briefmi, {Clientname, CMi, _CZeit}} ->
             log("received: briefmi from "
                 ++atom_to_list(Clientname)
                 ++" with Mi: "
                 ++integer_to_list(CMi)
-                ++"\n");
+                ++"\n"),
+            loop(bereit, Nameservice, SteeringVals, ProcessList);
         {briefterm, {_Clientname, CMi, _CZeit}} ->
             log("Calculation exited: "
                 ++ " RESULT: "
                 ++integer_to_list(CMi)
-                ++"\n");
+                ++"\n"),
+            loop(bereit, Nameservice, SteeringVals, ProcessList);
         kill ->
             killGGT(ProcessList, Nameservice),
-            log("Bye Bye")
+            log("Bye Bye\n"),
+            werkzeug:logstop()
     end.
 
 killGGT([], _) ->

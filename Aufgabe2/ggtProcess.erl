@@ -34,16 +34,24 @@ start_({_Arbeitszeit, Termzeit, GGTProzessNummer}, ConfigRecord) ->
 loop(ProcessName, ConfigRecord, Termzeit) ->
     receive
         kill -> log(ProcessName ++ ": byebye");
-        {setneighbors, N1, N2} -> 
+        {setneighbors, N1, N2} ->
               if is_atom(N1),is_atom(N2) ->
                     log("got Neighbors: "
                         ++atom_to_list(N1)
                         ++" "++atom_to_list(N2)++"\n");
-
-                 true ->
+              true ->
                     log("got not atom Neighbors\n")
               end,
-              loop(ProcessName, N1, N2, ConfigRecord, Termzeit, 0);
+             ConfigRecord#configVals.nameserviceadress ! {self(), {lookup, N1}},
+                 receive
+                    undefined -> 1;
+                    N11 -> ConfigRecord#configVals.nameserviceadress ! {self(), {lookup, N2}},
+                        receive
+                            undefined -> 1;
+                            N22 -> loop(ProcessName, N11, N22, ConfigRecord, Termzeit, 0)
+                        end
+                end;
+
         {tellmi,From} ->
             From ! -1;
         _ -> log("received nothing useful\n"),
@@ -73,7 +81,7 @@ loop(State, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) ->
         log("Received "++integer_to_list(Y)++"; neues Mi: "++integer_to_list(NewMi)++"\n"),
         N1 ! {sendy,NewMi},
         N2 ! {sendy,NewMi},
-        ConfigRecord#configVals.koordinatoradress ! {briefmi, {ProcessName,NewMi,erlang:time()}},
+        ConfigRecord#configVals.koordinatoradress ! {briefmi, {list_to_atom(ProcessName),NewMi,erlang:time()}},
         loop(computing, ProcessName, N1, N2, NewMi, ConfigRecord, Termzeit, Refs);
     {sendy, Y} ->
         Refs = checkTimer(TRef, Termzeit),
@@ -93,14 +101,18 @@ loop(State, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) ->
         N2 ! {abstimmung, ProcessName},
         loop(complete, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
     {abstimmung, ProcessName} ->
+            log("Abstimmung erhalten\n"),
             case State of
-                complete -> ConfigRecord#configVals.koordinatoradress ! {briefterm,
-                                                                         {ProcessName, Mi, erlang:time()}}
+                    complete -> log("State: Complete, send briefterm\n"),
+                                ConfigRecord#configVals.koordinatoradress ! {briefterm,
+                                                                         {list_to_atom(ProcessName), Mi, erlang:time()}}
             end,
         loop(State, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
     {abstimmung, Initiator} ->
+            log("Abstimmung erhalten\n"),
+            log("State: "++ atom_to_list(State) ++ "\n"),
         case State of
-                computing -> loop(half, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
+                computing -> loop(computing, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
                 half -> N2 ! {abstimmung, Initiator},
                         loop(half, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
                 complete -> N2 ! {abstimmung, Initiator},
@@ -109,7 +121,8 @@ loop(State, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) ->
 
 
 
-    kill -> log(ProcessName ++ ": byebye\n")
+    kill -> log(ProcessName ++ ": byebye\n"),
+            werkzeug:logstop()
   end.
 
 
