@@ -54,7 +54,17 @@ loop(init, Nameservice, SteeringVals, ProcessList) ->
         ready ->
             log("received ready\n"),
             buildProcessRing(ProcessList, Nameservice),
-            loop(bereit, Nameservice, SteeringVals, ProcessList)
+            loop(bereit, Nameservice, SteeringVals, ProcessList);
+
+        kill ->
+            killGGT(ProcessList, Nameservice),
+            log("Bye Bye\n"),
+            werkzeug:logstop(),
+            Nameservice ! {self(), {unbind, SteeringVals#steeringVals.koordinatorname}},
+            receive
+                ok -> log("koordinator unbind\n")
+            end,
+            exit(normal)
 
 	end;
 
@@ -88,7 +98,12 @@ loop(bereit, Nameservice, SteeringVals, ProcessList) ->
         kill ->
             killGGT(ProcessList, Nameservice),
             log("Bye Bye\n"),
-            werkzeug:logstop()
+            werkzeug:logstop(),
+            Nameservice ! {self(), {unbind, SteeringVals#steeringVals.koordinatorname}},
+            receive
+                ok -> log("koordinator unbind\n")
+            end,
+            exit(normal)
     end.
 
 killGGT([], _) ->

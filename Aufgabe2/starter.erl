@@ -59,7 +59,8 @@ startProcesses({ArbeitsZeit, TermZeit, GGTProzessnummer}, ConfigRecord) ->
 
 log(Message) ->
 	Endung = "Starter"++pid_to_list(self()),
-	tools:log(Message,Endung).
+	tools:log(Message,Endung),
+    werkzeug:logstop().
 
 
 
