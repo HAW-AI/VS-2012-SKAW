@@ -10,6 +10,7 @@
 start() ->
     spawn(fun() -> start_() end).
 
+
 start_() ->
 	{Arbeitszeit,
      Termzeit,
@@ -106,6 +107,7 @@ loop(bereit, Nameservice, SteeringVals, ProcessList) ->
             exit(normal)
     end.
 
+
 killGGT([], _) ->
     1;
 killGGT([H|T], Nameservice) ->
@@ -130,10 +132,12 @@ computeMis([_H|T],GGT,AccList)->
     Mi = computeMi(GGT),
     computeMis(T,GGT,AccList++[Mi]).
 
+
 computeMi(GGT)->
     Prims = [3,5,11,13,23,37],
     F = fun(Prim,Acc) -> miSingleStep(Prim,Acc)end,
     GGT*lists:foldl(F,1,Prims).
+
 
 miSingleStep(Prim,Acc)->
     case random:uniform(3) of
@@ -141,6 +145,7 @@ miSingleStep(Prim,Acc)->
         2 -> Acc*Prim;
         3 -> trunc(Acc*math:pow(Prim,2))
     end.
+
 
 distributeMis([],_,_) -> 1;
 distributeMis([GGTProcess|Tail],[Mi|MiTail],Nameservice)->
@@ -157,7 +162,6 @@ distributeMis([GGTProcess|Tail],[Mi|MiTail],Nameservice)->
             {Name, Node} ! {setpm, Mi}
     end,
     distributeMis(Tail,MiTail,Nameservice).
-
 
 
 buildProcessRing([],_) ->
@@ -197,12 +201,16 @@ neighbours(Length, Length, L) ->
 neighbours(X, _Length, L) ->
     {lists:nth(X-1, L),lists:nth(X+1, L)}.
 
+
 listSize(List) ->
     listSize_(List, 0).
+
+
 listSize_([], Acc) ->
     Acc;
 listSize_([_|T], Acc) ->
     listSize_(T, Acc+1).
+
 
 log(Message) ->
 	Endung = "Koordinator",
@@ -213,6 +221,7 @@ getFifteenPercent(List) ->
     FifteenPercent = trunc(listSize(List) * 0.15)+1,
     werkzeug:shuffle(List),
     lists:sublist(List, FifteenPercent).
+
 
 distributedStart([], _, _) ->
     1;
@@ -235,12 +244,5 @@ distributedStart([H|T], Nameservice, Number) ->
     end,
 
     distributedStart(T, Nameservice, Number).
-
-
-
-
-
-
-
 
 

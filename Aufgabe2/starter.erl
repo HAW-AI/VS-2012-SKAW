@@ -10,6 +10,7 @@
 start(Number) ->
     spawn(fun() -> start_(Number) end).
 
+
 start_(Number) ->
 	 {Praktikumsgruppe,
       Teamnummer,
@@ -49,6 +50,7 @@ getSteeringVal(KoordinatorAdress) ->
          GGTProzessnummer} -> {ArbeitsZeit, TermZeit, GGTProzessnummer}
     end.
 
+
 startProcesses({ArbeitsZeit, TermZeit, 1}, ConfigRecord) ->
     ggtProcess:start({ArbeitsZeit, TermZeit, 1}, ConfigRecord);
 %    spawn(ggtProcess, start, [{ArbeitsZeit, TermZeit, 1}, ConfigRecord]);
@@ -56,6 +58,7 @@ startProcesses({ArbeitsZeit, TermZeit, GGTProzessnummer}, ConfigRecord) ->
     ggtProcess:start({ArbeitsZeit, TermZeit, GGTProzessnummer}, ConfigRecord),
 %    spawn(ggtProcess, start, [{ArbeitsZeit, TermZeit, GGTProzessnummer}, ConfigRecord]),
     startProcesses({ArbeitsZeit, TermZeit, GGTProzessnummer - 1}, ConfigRecord).
+
 
 log(Message) ->
 	Endung = "Starter"++pid_to_list(self()),

@@ -11,7 +11,6 @@
 start({ArbeitsZeit, TermZeit, GGTProzessNummer}, ConfigRecord) ->
     spawn(fun() -> start_({ArbeitsZeit, TermZeit, GGTProzessNummer}, ConfigRecord) end).
 
-
 %%TODO Arbeitszeit und Termzeit integrieren
 start_({Arbeitszeit, Termzeit, GGTProzessNummer}, ConfigRecord) ->
     {processName, ProcessName} = createProcessName(GGTProzessNummer, ConfigRecord),
@@ -136,6 +135,7 @@ loop(State, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) 
             werkzeug:logstop()
   end.
 
+
 unbind(ProcessName, ConfigVals) ->
     ConfigVals#configVals.nameserviceadress ! {self(), {unbind, ProcessName}},
     receive
@@ -144,13 +144,13 @@ unbind(ProcessName, ConfigVals) ->
     end.
 
 
-
 createProcessName(ProcessNo, ConfigRecord) ->
     ProcessName = integer_to_list(ConfigRecord#configVals.praktikumsgruppe)
                   ++integer_to_list(ConfigRecord#configVals.teamno)
                   ++integer_to_list(ProcessNo)
                   ++integer_to_list(ConfigRecord#configVals.starterno),
     {processName, list_to_atom(ProcessName)}.
+
 
 log(Message) ->
 	Endung = "GGTProcess: "++pid_to_list(self()),
