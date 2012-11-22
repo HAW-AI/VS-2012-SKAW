@@ -15,19 +15,19 @@ start({ArbeitsZeit, TermZeit, GGTProzessNummer}, ConfigRecord) ->
 %%TODO Arbeitszeit und Termzeit integrieren
 start_({Arbeitszeit, Termzeit, GGTProzessNummer}, ConfigRecord) ->
     {processName, ProcessName} = createProcessName(GGTProzessNummer, ConfigRecord),
-    register(list_to_atom(ProcessName), self()),
+    register(ProcessName, self()),
 
     ConfigRecord#configVals.nameserviceadress ! {self(),
                                                 {rebind,
-                                                 list_to_atom(ProcessName),
+                                                 ProcessName,
                                                  node()}},
 
     receive
-        ok -> log(ProcessName ++ ": bound\n")
+        ok -> log(atom_to_list(ProcessName) ++ ": bound\n")
     end,
 
     ConfigRecord#configVals.koordinatoradress ! {hello,
-                                                 list_to_atom(ProcessName)},
+                                                 ProcessName},
     loop(Arbeitszeit, ProcessName, ConfigRecord, Termzeit).
 
 %% waiting for neighbors - loop
@@ -35,7 +35,7 @@ loop(Arbeitszeit, ProcessName, ConfigRecord, Termzeit) ->
     receive
         kill ->
             unbind(ProcessName, ConfigRecord),
-            log(ProcessName ++ ": byebye");
+            log(atom_to_list(ProcessName) ++ ": byebye");
         {setneighbors, N1, N2} ->
               if is_atom(N1),is_atom(N2) ->
                     log("got Neighbors: "
@@ -86,7 +86,7 @@ loop(State, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) 
         log("Received "++integer_to_list(Y)++"; neues Mi: "++integer_to_list(NewMi)++"\n"),
         N1 ! {sendy,NewMi},
         N2 ! {sendy,NewMi},
-        ConfigRecord#configVals.koordinatoradress ! {briefmi, {list_to_atom(ProcessName),NewMi,erlang:time()}},
+        ConfigRecord#configVals.koordinatoradress ! {briefmi, {ProcessName,NewMi,erlang:time()}},
         loop(computing, Arbeitszeit, ProcessName, N1, N2, NewMi, ConfigRecord, Termzeit, Refs);
     {sendy, Y} ->
         Refs = checkTimer(TRef, Termzeit),
@@ -106,15 +106,21 @@ loop(State, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) 
         N2 ! {abstimmung, ProcessName},
         loop(complete, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
     {abstimmung, ProcessName} ->
-            log("Abstimmung erhalten\n"),
+            log("Eigene Abstimmung erhalten -> Ring komplett durchlaufen\n"),
             case State of
                     complete -> log("State: Complete, send briefterm\n"),
                                 ConfigRecord#configVals.koordinatoradress ! {briefterm,
-                                                                         {list_to_atom(ProcessName), Mi, erlang:time()}}
+                                                                         {ProcessName, Mi, erlang:time()}};
+		    _ -> log("State: not complete.\n")
             end,
         loop(State, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
     {abstimmung, Initiator} ->
-            log("Abstimmung erhalten\n"),
+	    if
+		 is_atom(Initiator) -> log("Abstimmung erhalten von "++atom_to_list(Initiator)++"\n");
+		 is_pid(Initiator) -> log("Abstimmung erhalten von "++pid_to_list(Initiator)++"\n");
+		 true -> log("Abstimmung erhalten\n")
+	    end,
+
             log("State: "++ atom_to_list(State) ++ "\n"),
         case State of
                 computing -> loop(computing, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef);
@@ -131,9 +137,9 @@ loop(State, Arbeitszeit, ProcessName, N1, N2, Mi, ConfigRecord, Termzeit, TRef) 
   end.
 
 unbind(ProcessName, ConfigVals) ->
-    ConfigVals#configVals.nameserviceadress ! {self(), {unbind, list_to_atom(ProcessName)}},
+    ConfigVals#configVals.nameserviceadress ! {self(), {unbind, ProcessName}},
     receive
-        ok -> log(ProcessName ++ ": unbind"
+        ok -> log(atom_to_list(ProcessName) ++ ": unbind"
               ++ "bye bye\n")
     end.
 
@@ -144,7 +150,7 @@ createProcessName(ProcessNo, ConfigRecord) ->
                   ++integer_to_list(ConfigRecord#configVals.teamno)
                   ++integer_to_list(ProcessNo)
                   ++integer_to_list(ConfigRecord#configVals.starterno),
-    {processName, ProcessName}.
+    {processName, list_to_atom(ProcessName)}.
 
 log(Message) ->
 	Endung = "GGTProcess: "++pid_to_list(self()),
