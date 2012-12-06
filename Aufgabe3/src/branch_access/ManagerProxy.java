@@ -33,7 +33,7 @@ public class ManagerProxy extends Manager {
             in = new BufferedReader(new InputStreamReader(server.getInputStream()));
             out = new PrintWriter(server.getOutputStream(),true);
         } catch (IOException ex) {
-            Logger.getLogger(ManagerProxy.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex.getMessage());
         }
     }
     @Override
