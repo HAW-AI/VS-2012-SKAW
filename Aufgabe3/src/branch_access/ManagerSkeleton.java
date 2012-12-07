@@ -30,7 +30,7 @@ public class ManagerSkeleton extends Skeleton {
         } catch (IOException ex) {
             Logger.getLogger(ManagerSkeleton.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.println("Manager erstellt:"+name);
+        System.out.println("Manager erstellt: "+name);
     }
     
     public static Skeleton create(String name, Manager m){

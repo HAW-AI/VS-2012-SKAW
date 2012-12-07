@@ -38,16 +38,22 @@ class AccountSkeletonConnection extends Thread {
 			System.out.println("New AccountSkeletonConnection started");
 			while (!socket.isClosed() && ((inputLine = in.readLine()) != null)) {
                             String args[] = inputLine.split(";");
-                            System.out.println("got new request:"+ inputLine);
+                            System.out.println("AccountSkeletonConnection got new request: "+ inputLine);
                             if(args[0].equals("deposit")){
+                                try{
                                     account.deposit(Double.valueOf(args[1]));
                                     out.println("Result;void");
+                                }catch (RuntimeException e){
+                                    out.println("RuntimeException;"+e.getMessage());
+                                }
                             }else if(args[0].equals("withdraw")){
                                 try{
                                     account.withdraw(Double.valueOf(args[1]));
                                     out.println("Result;void");
                                 } catch (OverdraftException ex) {
                                     out.println("OverdraftException;"+ex.getMessage());
+                                } catch (RuntimeException e2){
+                                    out.println("RuntimeException;"+e2.getMessage());
                                 }
                             }else if(args[0].equals("getBalance")){
                                     double amount = account.getBalance();
@@ -60,7 +66,7 @@ class AccountSkeletonConnection extends Thread {
 		} catch (IOException e) {
 //			e.printStackTrace();
 		} finally {
-			System.out.println("AccountSkeletonConneciton stopped");
+			System.out.println("AccountSkeletonConnection stopped");
 		}
 	}
     

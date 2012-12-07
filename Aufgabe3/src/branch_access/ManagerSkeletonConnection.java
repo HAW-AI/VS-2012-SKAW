@@ -37,25 +37,24 @@ class ManagerSkeletonConnection extends Thread {
 		try {
 			System.out.println("New ManagerSkeletonConnection started");
 			while (!socket.isClosed() && ((inputLine = in.readLine()) != null)) {
-                            System.out.println("got new request: "+inputLine);
+                            System.out.println("ManagerSkeletonConnection got new request: "+inputLine);
                             String information[] = inputLine.split(";");
 				if(information[0].equals("getBalance")){
                                     try{
                                         double balance = manager.getBalance(information[1]);
                                         out.println("Result;"+String.valueOf(balance));
-                                        System.out.println(" sent: Result;"+String.valueOf(balance));
+                                        System.out.println("ManagerSkeletonConnection sent: Result;"+String.valueOf(balance));
                                     }catch(Exception e){
                                         out.println("Result;"+String.valueOf(Double.NaN));
-                                        System.out.println(" sent: Result;"+String.valueOf(Double.NaN));
+                                        System.out.println("ManagerSkeletonConnection sent: Result;"+String.valueOf(Double.NaN));
                                     }   
                                 }else if(information[0].equals("createAccount")){
-                                    System.out.println("in createAccount");
                                         String result = manager.createAccount(information[1]);
                                         out.println("Result;"+result);
-                                        System.out.println("sent: Result;"+result);
+                                        System.out.println("ManagerSkeletonConnection sent: Result;"+result);
                                 }else{
                                     out.println("UnkownMessageException;"+"Unknown Message: "+inputLine);
-                                    System.out.println("UnkownMessageException;"+"Unknown Message: "+inputLine);
+                                    System.out.println("ManagerSkeletonConnection: UnkownMessageException;"+"Unknown Message: "+inputLine);
                                 }
 			}
 			in.close();
@@ -64,7 +63,7 @@ class ManagerSkeletonConnection extends Thread {
 		} catch (IOException e) {
 //			e.printStackTrace();
 		} finally {
-			System.out.println("Communicator stopped");
+			System.out.println("ManagerSkeletonConnection stopped");
 		}
 	}
     

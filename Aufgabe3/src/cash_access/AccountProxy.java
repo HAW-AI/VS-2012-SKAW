@@ -57,6 +57,8 @@ public class AccountProxy extends Account{
             String results[] = in.readLine().split(";");
             if(results[0].equals("InterruptedException")){
                 throw new RuntimeException(results[1]);
+            }else if(results[0].equals("RuntimeException")) {
+                throw new RuntimeException(results[1]);
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex.getMessage());
@@ -72,6 +74,8 @@ public class AccountProxy extends Account{
                 throw new RuntimeException(results[1]);
             }else if(results[0].equals("OverdraftException")){
                 throw new OverdraftException(results[1]);
+            }else if(results[0].equals("RuntimeException")) {
+                throw new RuntimeException(results[1]);
             }
         }catch(IOException e){
             throw new RuntimeException(e.getMessage());
