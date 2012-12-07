@@ -25,11 +25,11 @@ public class ManagerProxy extends Manager {
     public ManagerProxy(String name, InetSocketAddress address){
         this.name = name;
         this.address = address;
-        System.out.println("ManagerProxyErstellt");
         try {
             server = new Socket(address.getAddress(),address.getPort());
             in = new BufferedReader(new InputStreamReader(server.getInputStream()));
             out = new PrintWriter(server.getOutputStream(),true);
+            System.out.println("ManagerProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> created");
         } catch (IOException ex) {
             throw new RuntimeException(ex.getMessage());
         }
@@ -37,10 +37,11 @@ public class ManagerProxy extends Manager {
     @Override
     public String createAccount(String owner) {
         out.println("createAccount;"+owner);
+        System.out.println("ManagerProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: createAccount"+owner);
         try {
             String incoming = in.readLine();
             String results[] = incoming.split(";");
-            System.out.println("got answer: "+incoming);
+            System.out.println("ManagerProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
             if(results[0].equals("Result")){
                 return results[1];
             }else{
@@ -54,8 +55,11 @@ public class ManagerProxy extends Manager {
     @Override
     public double getBalance(String accountID) {
         out.println("getBalance;"+accountID);
+        System.out.println("ManagerProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: getBalance;"+accountID);
         try {
-            String results[] = in.readLine().split(";");
+            String incoming = in.readLine();
+            String results[] = incoming.split(";");
+            System.out.println("ManagerProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
             if(results[0].equals("Result")){
                 return Double.valueOf(results[1]);
             }else{

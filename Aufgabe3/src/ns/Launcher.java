@@ -18,7 +18,7 @@ public final class Launcher {
 				Socket socket = serverSocket.accept();
 				Communicator comm = new Communicator(socket);
 				comm.setDaemon(true);
-				System.out.println("starting new ns thread");
+				System.out.println("[starting new ns thread...]");
 				comm.start();
 			}
 

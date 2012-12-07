@@ -33,14 +33,14 @@ final class NameServiceStub extends NameService {
             String port = String.valueOf(skeleton.port());
             String type = skeleton.type();
             String message = "rebind;"+name+";"+type+";"+host+";"+ port;
-            System.out.println("try to rebind: " + message);
+            //System.out.println("Nameservice <"+socket.getLocalAddress().toString()+String.valueOf(socket.getLocalPort())+">: try to rebind: " + message);
             out.println(message);		
 	}
 
 	@Override
 	public Object resolve(String name) {
 		Object result = null;
-		System.out.println("try to resolve: " + name);
+		//System.out.println("Nameservice <"+socket.getLocalAddress().toString()+String.valueOf(socket.getLocalPort())+">: try to resolve: " + name);
 		out.println("resolve;" + name);
 		String[] resultLine = null;
 		try {

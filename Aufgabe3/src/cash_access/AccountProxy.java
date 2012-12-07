@@ -32,6 +32,7 @@ public class AccountProxy extends Account{
             server = new Socket(address.getAddress(),address.getPort());
             in = new BufferedReader(new InputStreamReader(server.getInputStream()));
             out = new PrintWriter(server.getOutputStream(),true);
+            System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> created");
         } catch (IOException ex) {
             Logger.getLogger(ManagerProxy.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -39,10 +40,11 @@ public class AccountProxy extends Account{
     
     public String createAccount(String owner) {
         out.println("createAccount;"+owner);
-        System.out.println("Schicke createAccount: "+owner);
+        System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: createAccount;"+owner);
         try {
-            String results[] = in.readLine().split(";");
-            System.out.println("got account_id:"+results[1]);
+            String incoming = in.readLine();
+            String results[] = incoming.split(";");
+            System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
             return results[1];
         } catch (IOException ex) {
             System.out.println("IOException bei createAccount");
@@ -53,8 +55,11 @@ public class AccountProxy extends Account{
     @Override
     public void deposit(double amount) {
         out.println("deposit;"+String.valueOf(amount));
+        System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: deposit;"+String.valueOf(amount));
         try {
-            String results[] = in.readLine().split(";");
+            String incoming = in.readLine();
+            String results[] = incoming.split(";");
+            System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
             if(results[0].equals("InterruptedException")){
                 throw new RuntimeException(results[1]);
             }else if(results[0].equals("RuntimeException")) {
@@ -68,8 +73,11 @@ public class AccountProxy extends Account{
     @Override
     public void withdraw(double amount) throws OverdraftException {
         out.println("withdraw;"+String.valueOf(amount));
+        System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: withdraw;"+String.valueOf(amount));
         try{
-            String results[] = in.readLine().split(";");
+            String incoming = in.readLine();
+            String results[] = incoming.split(";");
+            System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
             if(results[0].equals("InterruptedException")){
                 throw new RuntimeException(results[1]);
             }else if(results[0].equals("OverdraftException")){
@@ -85,8 +93,11 @@ public class AccountProxy extends Account{
     @Override
     public double getBalance() {
         out.println("getBalance;"+this.name);
+        System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: getBalance;"+this.name);
         try{
-            String results[] = in.readLine().split(";");
+            String incoming = in.readLine();
+            String results[] = incoming.split(";");
+            System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
             if(results[0].equals("InterruptedException")){
                 throw new RuntimeException(results[1]);
             }else{
