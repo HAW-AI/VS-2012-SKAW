@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import mware_lib.Skeleton;
 
 /**
@@ -18,17 +20,24 @@ public class AccountSkeleton extends Skeleton{
     private String name;
     private Account account;
     private int port;
+    private ServerSocket serverSocket;
     
     public AccountSkeleton(String name, Account account){
         this.name = name;
         this.account = account;
-        this.port = 9988;
+        try {
+            this.serverSocket = new ServerSocket(0);
+            this.port = serverSocket.getLocalPort();
+        } catch (IOException ex) {
+            Logger.getLogger(AccountSkeleton.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
     }
     
     public void run(){
-        ServerSocket serverSocket = null;
         try {
-		serverSocket = new ServerSocket(port);
+                System.out.println("In AccountSkeleton run");
+                System.out.println("Port: "+this.port);
 		while (true) {
 			Socket socket = serverSocket.accept();
 			AccountSkeletonConnection connection = new AccountSkeletonConnection(socket, account);

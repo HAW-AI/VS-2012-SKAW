@@ -9,9 +9,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.concurrent.Semaphore;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -43,9 +40,14 @@ class ManagerSkeletonConnection extends Thread {
                             System.out.println("got new request: "+inputLine);
                             String information[] = inputLine.split(";");
 				if(information[0].equals("getBalance")){
+                                    try{
                                         double balance = manager.getBalance(information[1]);
                                         out.println("Result;"+String.valueOf(balance));
                                         System.out.println(" sent: Result;"+String.valueOf(balance));
+                                    }catch(Exception e){
+                                        out.println("Result;"+String.valueOf(Double.NaN));
+                                        System.out.println(" sent: Result;"+String.valueOf(Double.NaN));
+                                    }   
                                 }else if(information[0].equals("createAccount")){
                                     System.out.println("in createAccount");
                                         String result = manager.createAccount(information[1]);
