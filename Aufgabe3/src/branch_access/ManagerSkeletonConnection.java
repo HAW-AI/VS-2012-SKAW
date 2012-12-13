@@ -45,7 +45,7 @@ class ManagerSkeletonConnection extends Thread {
                                         out.println("Result;"+String.valueOf(balance));
                                         System.out.println("ManagerSkeletonConnection <"+socketInfo()+"> sent: Result;"+String.valueOf(balance));
                                     }catch(Exception e){
-                                        out.println("Result;"+String.valueOf(Double.NaN));
+                                        out.println("RuntimeException;"+e.getMessage());
                                         System.out.println("ManagerSkeletonConnection <"+socketInfo()+"> sent: Result;"+String.valueOf(Double.NaN));
                                     }   
                                 }else if(information[0].equals("createAccount")){
