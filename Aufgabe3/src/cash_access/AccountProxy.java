@@ -38,19 +38,6 @@ public class AccountProxy extends Account{
         }
     }
     
-    public String createAccount(String owner) {
-        out.println("createAccount;"+owner);
-        System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> sent: createAccount;"+owner);
-        try {
-            String incoming = in.readLine();
-            String results[] = incoming.split(";");
-            System.out.println("AccountProxy <"+server.getLocalAddress().toString()+String.valueOf(server.getLocalPort())+"> received: "+incoming);
-            return results[1];
-        } catch (IOException ex) {
-            System.out.println("IOException bei createAccount");
-        }
-        return null;
-    }
 
     @Override
     public void deposit(double amount) {
