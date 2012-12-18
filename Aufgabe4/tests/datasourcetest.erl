@@ -17,7 +17,7 @@ match(Bin) ->
       NextSlot:1/binary,
       Time:6/binary,
       _Rest/binary>> = Bin,
-    io:format("Mein Name: ~p -- Data: ~p -- Slot: ~p -- Time: ~p~n",
+    io:format("Name: ~p -- Data: ~p -- Slot: ~p -- Time: ~p~n",
                                              [binary_to_list(Name),
                                               binary_to_list(Data),
                                               binary_to_list(NextSlot),
