@@ -4,6 +4,8 @@
 -record(package, {data,
                   slot = 1,
                   time = binary:encode_unsigned(1317977394825, big)}).
+                  %% TODO: Get time as 8 Byte integer!
+                  %%       Right now it is only 6 Bytes, no clue why!
 
 
 %% Matches the Binary created after receiving the Data of DataSource to 
