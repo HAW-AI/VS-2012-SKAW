@@ -68,7 +68,7 @@ do_read(Port, P) ->
     end.
 
 
-%% Builds the complete binary package which can be sent
+%% Builds the complete binary package (ready to be sent)
 build_package(P) ->
     Bin = list_to_binary([P#package.data, P#package.slot, P#package.time]),
     % io:format("Bin: ~p~n", [Bin]),
