@@ -8,30 +8,6 @@
                   %%       Right now it is only 6 Bytes, no clue why!
 
 
-%% Matches the Binary created after receiving the Data of DataSource to 
-%% Name (Name of the Team + Stationnr. eg: "team 02-11")
-%% Data (Data received from DataSource)
-%% NextSlot (NextSlot used to send data: here hardcoded to "1" for testing only)
-%% Time (Send-Time as UNIX-Time)
-match(Bin) ->
-    <<Name:10/binary,
-      Data:14/binary,
-      NextSlot:1/binary,
-      Time:6/binary,
-      _Rest/binary>> = Bin,
-    io:format("Name: ~p -- Data: ~p -- Slot: ~p -- Time: ~p~n",
-                                             [binary_to_list(Name),
-                                              binary_to_list(Data),
-                                              binary_to_list(NextSlot),
-                                              binary_to_list(Time)]).
-    %% TODO: Right now logging transforms the given lists to characters
-    %%       which just looks like crap. Needs fixing!
-    %werkzeug:logging(test, "Name: " ++ binary_to_list(Name)
-    %                        ++ " | Data: " ++ binary_to_list(Data)
-    %                        ++ " | Slot: " ++ binary_to_list(NextSlot)
-    %                        ++ " | Time: " ++ binary_to_list(Time)).
-
-
 %% Opens a port to the spawned executable "DataSource"
 %% to receive everything send by this source
 start() ->
@@ -73,3 +49,29 @@ build_package(P) ->
     Bin = list_to_binary([P#package.data, P#package.slot, P#package.time]),
     % io:format("Bin: ~p~n", [Bin]),
     Bin.
+
+
+%% Matches the Binary created after receiving the Data of DataSource to 
+%% Name (Name of the Team + Stationnr. eg: "team 02-11")
+%% Data (Data received from DataSource)
+%% NextSlot (NextSlot used to send data: here hardcoded to "1" for testing only)
+%% Time (Send-Time as UNIX-Time)
+match(Bin) ->
+    <<Name:10/binary,
+      Data:14/binary,
+      NextSlot:1/binary,
+      Time:6/binary,
+      _Rest/binary>> = Bin,
+    io:format("Name: ~p -- Data: ~p -- Slot: ~p -- Time: ~p~n",
+                                             [binary_to_list(Name),
+                                              binary_to_list(Data),
+                                              binary_to_list(NextSlot),
+                                              binary_to_list(Time)]).
+    %% TODO: Right now logging transforms the given lists to characters
+    %%       which just looks like crap. Needs fixing!
+    %werkzeug:logging(test, "Name: " ++ binary_to_list(Name)
+    %                        ++ " | Data: " ++ binary_to_list(Data)
+    %                        ++ " | Slot: " ++ binary_to_list(NextSlot)
+    %                        ++ " | Time: " ++ binary_to_list(Time)).
+
+
