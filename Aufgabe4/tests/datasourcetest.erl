@@ -11,7 +11,7 @@
 %% Opens a port to the spawned executable "DataSource"
 %% to receive everything send by this source
 start() ->
-    %% For "open_port()" to work the DataSource executable need to be placed
+    %% For "open_port()" to work the DataSource executable needs to be placed
     %% in the same directory as this file.
     %% Alternatively use absolute path to DataSource
     Port = open_port({spawn, "./DataSource 02 11"}, []),
