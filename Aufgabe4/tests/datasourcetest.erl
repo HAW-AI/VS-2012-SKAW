@@ -42,7 +42,7 @@ start() ->
     do_read(Port, #package{}).
 
 
-%% Reads ONE TIME from the datasource
+%% Reads only ONE line from the datasource
 %%
 %% {Port, eof} is not needed at the moment
 %%
