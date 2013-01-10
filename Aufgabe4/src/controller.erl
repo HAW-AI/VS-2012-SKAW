@@ -12,7 +12,7 @@ start([Port, TeamNo, StationNo, MulticastIp, LocalIp]) ->
          LocalIpTuple).
 
 
-init(Port, TeamNo, StationNo, MulticastIp, LocalIp) ->
+init(Port, TeamNo, _StationNo, MulticastIp, LocalIp) ->
     ReceivePort = Port,
     SendPort = TeamNo + 14000,
     {ok,ReceiveSocket} = gen_udp:open(ReceivePort, [binary,
@@ -29,11 +29,12 @@ init(Port, TeamNo, StationNo, MulticastIp, LocalIp) ->
                                             {multicast_loop, false},
                                             {multicast_if, LocalIp}]),
 
-    ReceiverPid = spawn(receiver, start, [ReceiveSocket]),
-    gen_udp:controlling_process(ReceiveSocket, ReceiverPid),
 
-    SenderPid = spawn(sender, start, [ReceiverPid]),
+    SenderPid = spawn(sender, start, [SendSocket, MulticastIp, ReceivePort, self()]),
     gen_udp:controlling_process(SendSocket, SenderPid),
+
+    ReceiverPid = spawn(receiver, start, [ReceiveSocket, SenderPid, self()]),
+    gen_udp:controlling_process(ReceiveSocket, ReceiverPid),
 
     DataManagerPid = spawn(datamanager, start, []),
     loop(ReceiverPid, SenderPid, DataManagerPid).
@@ -41,6 +42,9 @@ init(Port, TeamNo, StationNo, MulticastIp, LocalIp) ->
 
 loop(RPid, SPid, DMPid) ->
     receive
+        {tellMeToSend, Pid, NextSlot} ->
+            SendNow = utilities:get_timestamp_for_next_frame() + (NextSlot * 50),
+            erlang:send_after(SendNow, Pid, sendNow);
         {giveReceiverPid, Pid} ->
             Pid ! {receiverPid, RPid},
             loop(RPid, SPid, DMPid);

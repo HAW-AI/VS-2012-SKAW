@@ -1,29 +1,25 @@
 -module(sender).
 -compile(export_all).
--record(sendpackage, {data,
-                  slot = 1,
-                  time = 0}).
 
 
-start() ->
-    DMPid = spawn(datamanager, start []),
-    loop(DMPid).
+start(Socket, Ip, Port, ControllerPid) ->
+    DMPid = spawn(datamanager, start, []),
+    loop(Socket, Ip, Port, ControllerPid, DMPid).
 
 
-loop(DMPid) ->
+loop(Socket, Ip, Port, _ControllerPid, DMPid) ->
     DMPid ! {next, self()},
     receive
         {nextData, Data} ->
-            Slot = getNextFreeSlot(),
+            receive
+                {sendNow, MySlot} ->
+                    Timestamp = utilities:get_timestamp(),
+                    Package = << (list_to_binary(Data))/binary,
+                                 MySlot,
+                                 Timestamp:64/integer >>,
+                    gen_udp:send(Socket, Ip, Port, Package)
+            end
+    end.
 
-ms_time() ->
-    {Megasecs, Secs, Microsecs} = erlang:now(),
-    ((Megasecs * 1000000 + Secs) * 1000000 + Microsecs) div 1000.
 
-
-build_sendpackage() ->
-    ;
-
-
-getNextFreeSlot() ->
 
