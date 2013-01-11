@@ -40,7 +40,7 @@ message_to_string(Packet) ->
      {Prefix,Slot,Nutzdaten,Timestamp} = match_message_for_to_string(Packet),
      [Prefix,Slot,Nutzdaten,Timestamp].
 
-get_timestamp_for_next_frame() ->
+get_time_for_next_frame() ->
     {Mega,Sec,_} = erlang:now(),
     ((Mega * 1000000 + Sec) * 1000) + 1000.
 

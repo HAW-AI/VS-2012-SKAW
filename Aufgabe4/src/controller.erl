@@ -1,8 +1,12 @@
 -module(controller).
--export([start/1]).
+-compile(export_all).
 
 
-start([Port, TeamNo, StationNo, MulticastIp, LocalIp]) ->
+start(Args) ->
+    spawn(?MODULE, maininit, [Args]).
+
+
+maininit([Port, TeamNo, StationNo, MulticastIp, LocalIp]) ->
     {ok,MulticastIpTuple} = inet_parse:address(atom_to_list(MulticastIp)),
     {ok,LocalIpTuple} = inet_parse:address(atom_to_list(LocalIp)),
     init(list_to_integer(atom_to_list(Port)),
@@ -12,39 +16,42 @@ start([Port, TeamNo, StationNo, MulticastIp, LocalIp]) ->
          LocalIpTuple).
 
 
-init(Port, TeamNo, _StationNo, MulticastIp, LocalIp) ->
+init(Port, TeamNo, StationNo, MulticastIp, LocalIp) ->
     ReceivePort = Port,
-    SendPort = TeamNo + 14000,
+    SendPort = StationNo + 14000,
     {ok,ReceiveSocket} = gen_udp:open(ReceivePort, [binary,
-                                                  {active, true},
-                                                  {multicast_if, LocalIp},
-                                                  inet,
-                                                  {multicast_loop, false},
-                                                  {add_membership,
-                                                  {MulticastIp,LocalIp}}]),
+                                                   {active, true},
+                                                   {multicast_if, LocalIp},
+                                                   inet,
+                                                   {reuseaddr, true},
+                                                   {multicast_loop, true},
+                                                   {add_membership, {MulticastIp,LocalIp}}]),
     {ok,SendSocket} = gen_udp:open(SendPort, [binary,
-                                            {active, true},
-                                            {ip, LocalIp},
-                                            inet,
-                                            {multicast_loop, false},
-                                            {multicast_if, LocalIp}]),
+                                             {active, true},
+                                             {ip, LocalIp},
+                                             inet,
+                                             {multicast_loop, true},
+                                             {multicast_if, LocalIp}]),
 
+    DataManagerPid = spawn(datamanager, start, [TeamNo, StationNo]),
+    io:format("controller: DMPid = ~p~n", [DataManagerPid]),
 
-    SenderPid = spawn(sender, start, [SendSocket, MulticastIp, ReceivePort, self()]),
+    SenderPid = spawn(sender, start, [SendSocket, MulticastIp, ReceivePort, self(), DataManagerPid]),
     gen_udp:controlling_process(SendSocket, SenderPid),
 
-    ReceiverPid = spawn(receiver, start, [ReceiveSocket, SenderPid, self()]),
+    ReceiverPid = spawn(receiver, start, [ReceiveSocket, SenderPid, self(), {TeamNo, StationNo}]),
     gen_udp:controlling_process(ReceiveSocket, ReceiverPid),
 
-    DataManagerPid = spawn(datamanager, start, []),
     loop(ReceiverPid, SenderPid, DataManagerPid).
 
 
 loop(RPid, SPid, DMPid) ->
     receive
         {tellMeToSend, Pid, NextSlot} ->
-            SendNow = utilities:get_timestamp_for_next_frame() + (NextSlot * 50),
-            erlang:send_after(SendNow, Pid, sendNow);
+            io:format("controller: got tellMeToSend~n"),
+            SendNow = utilities:get_time_for_next_frame() - utilities:get_timestamp() + (NextSlot * 50),
+            erlang:send_after(SendNow, Pid, sendNow),
+            loop(RPid, SPid, DMPid);
         {giveReceiverPid, Pid} ->
             Pid ! {receiverPid, RPid},
             loop(RPid, SPid, DMPid);

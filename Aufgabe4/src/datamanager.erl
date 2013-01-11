@@ -7,15 +7,21 @@ start_pid() ->
     Pid.
 
 
-start() ->
-    Port = open_port({spawn, "./DataSource 02 11"}, []),
+start(TeamNo, StationNo) ->
+    DataSource = "./DataSource " ++ integer_to_list(TeamNo) ++ " " ++ integer_to_list(StationNo),
+    Port = open_port({spawn, DataSource}, []),
     DataQueue = queue:new(),
-    loop(Port, DataQueue).
+    receive
+        {Port, {data, Data}} ->
+            NewDataQueue = queue:in(Data, DataQueue),
+            loop(Port, NewDataQueue)
+    end.
 
 
 loop(Port, DataQueue) ->
     receive
         {next, Pid} ->
+            io:format("DataManager: got next~n"),
             {{value, Item}, NewDataQueue} = queue:out(DataQueue),
             Pid ! {nextData, Item},
             loop(Port, NewDataQueue);
@@ -23,6 +29,7 @@ loop(Port, DataQueue) ->
             NewDataQueue = queue:in(Data, DataQueue),
             loop(Port, NewDataQueue);
         kill ->
+            os:cmd("killall DataSource"),
             io:format("Received kill~n");
         Any ->
             io:format("Received any data looking like: ~p~n", [Any]),
