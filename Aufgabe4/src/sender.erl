@@ -9,10 +9,10 @@ loop(Socket, Ip, Port, ControllerPid, DMPid) ->
     DMPid ! {next, self()},
     receive
         {nextData, Data} ->
-            io:format("sender: got nextData~n"),
+            io:format("Sender\t\t | received: nextData~n"),
             receive
                 {sendNow, MySlot} ->
-                    io:format("sender: got sendNow~n"),
+                    io:format("Sender\t\t | received: sendNow~n"),
                     Timestamp = utilities:get_timestamp(),
                     Package = << (list_to_binary(Data))/binary,
                                  MySlot,

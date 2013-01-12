@@ -21,7 +21,7 @@ start(TeamNo, StationNo) ->
 loop(Port, DataQueue) ->
     receive
         {next, Pid} ->
-            io:format("DataManager: got next~n"),
+            io:format("DataManager\t | received: next~n"),
             {{value, Item}, NewDataQueue} = queue:out(DataQueue),
             Pid ! {nextData, Item},
             loop(Port, NewDataQueue);
@@ -32,7 +32,7 @@ loop(Port, DataQueue) ->
             os:cmd("killall DataSource"),
             io:format("Received kill~n");
         Any ->
-            io:format("Received any data looking like: ~p~n", [Any]),
+            io:format("DataManager\t | received any data looking like: ~p~n", [Any]),
             loop(Port, DataQueue)
     end.
 

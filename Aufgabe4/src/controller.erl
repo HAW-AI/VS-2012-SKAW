@@ -34,7 +34,6 @@ init(Port, TeamNo, StationNo, MulticastIp, LocalIp) ->
                                              {multicast_if, LocalIp}]),
 
     DataManagerPid = spawn(datamanager, start, [TeamNo, StationNo]),
-    io:format("controller: DMPid = ~p~n", [DataManagerPid]),
 
     SenderPid = spawn(sender, start, [SendSocket, MulticastIp, ReceivePort, self(), DataManagerPid]),
     gen_udp:controlling_process(SendSocket, SenderPid),
@@ -48,7 +47,7 @@ init(Port, TeamNo, StationNo, MulticastIp, LocalIp) ->
 loop(RPid, SPid, DMPid) ->
     receive
         {tellMeToSend, Pid, NextSlot} ->
-            io:format("controller: got tellMeToSend~n"),
+            io:format("Controller\t | received: tellMeToSend~n"),
             SendNow = utilities:get_time_for_next_frame() - utilities:get_timestamp() + (NextSlot * 50),
             erlang:send_after(SendNow, Pid, sendNow),
             loop(RPid, SPid, DMPid);
@@ -62,6 +61,6 @@ loop(RPid, SPid, DMPid) ->
             Pid ! {DMPid},
             loop(RPid, SPid, DMPid);
         Any ->
-            io:format("Received ANY looking like ~p~n", [Any]),
+            io:format("Controller\t | received ANY looking like: ~p~n", [Any]),
             loop(RPid, SPid, DMPid)
     end.
