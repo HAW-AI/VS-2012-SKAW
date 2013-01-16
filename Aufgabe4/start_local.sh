@@ -6,4 +6,4 @@ echo "Using IP:" $IF_IP "for interface" $5
 CLASSPATH=`dirname $0`
 HOST_NO=${HOSTNAME##lab}
 erl -pa ebin/ -sname sender$3 -setcookie skaw -boot start_sasl -noshell -s controller start $1 $2 $3 $4 $IF_IP > $3.log &
-echo $! > pidlist
+echo $! >> pidlist

@@ -48,7 +48,7 @@ loop(RPid, SPid, DMPid) ->
     receive
         {tellMeToSend, Pid, NextSlot} ->
             io:format("Controller\t | received: tellMeToSend~n"),
-            SendNow = utilities:get_time_for_next_frame() - utilities:get_timestamp() + (NextSlot * 50),
+            SendNow = utilities:get_time_for_next_frame() - utilities:get_timestamp() + (NextSlot * 50) + 10,
             erlang:send_after(SendNow, Pid, sendNow),
             loop(RPid, SPid, DMPid);
         {giveReceiverPid, Pid} ->
